@@ -1,0 +1,4 @@
+node_modules/
+nkrypt-xyz-local-data/
+*.log
+.DS_Store
