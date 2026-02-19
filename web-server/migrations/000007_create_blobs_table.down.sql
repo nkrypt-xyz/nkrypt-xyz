@@ -1,0 +1,3 @@
+DROP TABLE IF EXISTS blobs;
+DROP TYPE IF EXISTS blob_status;
+
