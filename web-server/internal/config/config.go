@@ -84,7 +84,7 @@ type LogConfig struct {
 }
 
 // Load loads configuration using Viper, following the precedence and defaults
-// specified in 03-CONFIGURATION.md.
+// from environment variables or a .env file.
 func Load() (*Config, error) {
 	v := viper.New()
 
