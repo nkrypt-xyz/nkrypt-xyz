@@ -1,0 +1,25 @@
+# Root level ignores
+.env
+*.log
+.DS_Store
+
+# Web server specific
+web-server/bin/
+web-server/.env
+
+# Infrastructure specific
+infrastructure/terraform/**/.terraform/
+infrastructure/terraform/**/*.tfstate
+infrastructure/terraform/**/*.tfstate.backup
+infrastructure/terraform/**/.terraform.lock.hcl
+infrastructure/**/*.kubeconfig
+infrastructure/**/secrets/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+rewrite-docs/
+outtakes/
