@@ -1,0 +1,24 @@
+# Go
+bin/
+tmp/
+*.exe
+
+# Dependencies
+vendor/
+
+# IDE
+.vscode/
+.idea/
+.cursor/
+
+# Environment
+.env
+*.env
+
+# Build
+dist/
+
+# OS
+.DS_Store
+Thumbs.db
+
