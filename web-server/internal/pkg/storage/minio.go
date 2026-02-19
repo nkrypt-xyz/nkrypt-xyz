@@ -8,6 +8,7 @@ import (
 	"sort"
 	"time"
 
+	"github.com/minio/madmin-go/v4"
 	"github.com/minio/minio-go/v7"
 	"github.com/minio/minio-go/v7/pkg/credentials"
 	"github.com/redis/go-redis/v9"
@@ -15,6 +16,7 @@ import (
 
 type MinIOClient struct {
 	client      *minio.Client
+	adminClient *madmin.AdminClient
 	bucketName  string
 	redisClient *redis.Client
 }
@@ -34,8 +36,15 @@ func NewMinIOClient(endpoint, accessKey, secretKey, bucketName string, useSSL bo
 		return nil, err
 	}
 
+	// Initialize admin client for cluster information
+	adminClient, err := madmin.New(endpoint, accessKey, secretKey, useSSL)
+	if err != nil {
+		return nil, err
+	}
+
 	return &MinIOClient{
 		client:      client,
+		adminClient: adminClient,
 		bucketName:  bucketName,
 		redisClient: redisClient,
 	}, nil
@@ -190,4 +199,24 @@ func (m *MinIOClient) ComposeChunksToBlob(ctx context.Context, blobID string) er
 // getChunkKey returns the MinIO object key for a chunk
 func (m *MinIOClient) getChunkKey(blobID string, offset int64) string {
 	return fmt.Sprintf("blobs/%s.chunk.%d", blobID, offset)
+}
+
+// GetBucketUsage returns the used and total storage capacity
+func (m *MinIOClient) GetBucketUsage(ctx context.Context) (usedBytes int64, totalBytes int64, err error) {
+	// Get storage information which includes disk details
+	storageInfo, err := m.adminClient.StorageInfo(ctx)
+	if err != nil {
+		return 0, 0, fmt.Errorf("failed to get storage info: %w", err)
+	}
+
+	// Calculate total and used capacity from all disks
+	var totalCapacity uint64
+	var usedCapacity uint64
+
+	for _, disk := range storageInfo.Disks {
+		totalCapacity += disk.TotalSpace
+		usedCapacity += disk.UsedSpace
+	}
+
+	return int64(usedCapacity), int64(totalCapacity), nil
 }

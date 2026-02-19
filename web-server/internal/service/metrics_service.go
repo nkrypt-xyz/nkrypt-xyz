@@ -16,14 +16,14 @@ func NewMetricsService(storageClient *storage.MinIOClient) *MetricsService {
 }
 
 // GetDiskUsage returns disk usage statistics from MinIO.
-// For now, this is a simplified implementation that returns placeholder values.
-// A full implementation would query MinIO bucket statistics or use admin APIs.
 func (s *MetricsService) GetDiskUsage(ctx context.Context) (*model.DiskUsage, error) {
-	// TODO: Implement actual MinIO bucket usage query
-	// For MVP, return placeholder values
-	// In production, use MinIO admin client or bucket info APIs
+	usedBytes, totalBytes, err := s.storageClient.GetBucketUsage(ctx)
+	if err != nil {
+		return nil, err
+	}
+
 	return &model.DiskUsage{
-		UsedBytes:  0,
-		TotalBytes: 0,
+		UsedBytes:  usedBytes,
+		TotalBytes: totalBytes,
 	}, nil
 }
