@@ -1,0 +1,10 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "noEmit": true,
+    "skipLibCheck": true,
+    "types": ["vite/client"]
+  },
+  "exclude": ["node_modules", "dist", "src-pwa", "**/*.d.ts", "**/*.min.js", "**/*.bundle.js"],
+  "include": ["src/**/*", "src-pwa/**/*"]
+}
