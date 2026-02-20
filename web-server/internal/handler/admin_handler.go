@@ -34,11 +34,7 @@ func (h *AdminHandler) AddUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var req struct {
-		DisplayName string `json:"displayName" validate:"required,min=4,max=128"`
-		UserName    string `json:"userName" validate:"required,min=4,max=32"`
-		Password    string `json:"password" validate:"required,min=8,max=32"`
-	}
+	var req model.AddUserRequest
 	if err := ParseAndValidateBody(r, &req); err != nil {
 		SendErrorResponse(w, err)
 		return
@@ -69,10 +65,7 @@ func (h *AdminHandler) SetGlobalPermissions(w http.ResponseWriter, r *http.Reque
 		return
 	}
 
-	var req struct {
-		UserID            string            `json:"userId" validate:"required,len=16,alphanum"`
-		GlobalPermissions map[string]bool   `json:"globalPermissions" validate:"required"`
-	}
+	var req model.SetGlobalPermissionsRequest
 	if err := ParseAndValidateBody(r, &req); err != nil {
 		SendErrorResponse(w, err)
 		return
@@ -99,10 +92,7 @@ func (h *AdminHandler) SetBanningStatus(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	var req struct {
-		UserID   string `json:"userId" validate:"required,len=16,alphanum"`
-		IsBanned bool   `json:"isBanned"`
-	}
+	var req model.SetBanningStatusRequest
 	if err := ParseAndValidateBody(r, &req); err != nil {
 		SendErrorResponse(w, err)
 		return
@@ -129,10 +119,7 @@ func (h *AdminHandler) OverwriteUserPassword(w http.ResponseWriter, r *http.Requ
 		return
 	}
 
-	var req struct {
-		UserID      string `json:"userId" validate:"required,len=16,alphanum"`
-		NewPassword string `json:"newPassword" validate:"required,min=8,max=32"`
-	}
+	var req model.OverwriteUserPasswordRequest
 	if err := ParseAndValidateBody(r, &req); err != nil {
 		SendErrorResponse(w, err)
 		return
