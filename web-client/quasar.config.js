@@ -10,7 +10,7 @@ module.exports = configure(function (/* ctx */) {
       errors: true,
     },
 
-    boot: ["dark-mode"],
+    boot: ["dark-mode", "credentials"],
 
     css: ["app.scss", "dark-theme.scss"],
 

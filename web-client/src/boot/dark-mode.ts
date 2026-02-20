@@ -3,7 +3,7 @@ import { useSettingsStore } from "stores/settings";
 
 export default boot(({ app }) => {
   const settingsStore = useSettingsStore(app.config.globalProperties.$pinia);
-  
+
   settingsStore.load();
 
   if (settingsStore.darkMode !== null) {

@@ -29,7 +29,6 @@
 import { ref, onMounted } from "vue";
 import { useRoute } from "vue-router";
 import { useContentStore } from "stores/content";
-import { usePasswordStore } from "stores/password";
 import { callBlobGetApi, callBlobSetApi, callFileGetApi, callBucketListApi, BlobApiError } from "integration/content-apis";
 import { dialogService } from "services/dialog-service";
 import { errorService } from "services/error-service";
@@ -41,7 +40,6 @@ import { File } from "models/common";
 
 const route = useRoute();
 const contentStore = useContentStore();
-const passwordStore = usePasswordStore();
 
 const isLoading = ref(false);
 const isSaving = ref(false);
@@ -75,16 +73,11 @@ async function loadFile() {
       return;
     }
 
-    console.debug("Checking password cache for bucket:", bucketId);
-    console.debug("Cached password exists:", !!passwordStore.getPasswordForBucket(bucketId));
-
     const bucketPassword = await getOrCollectPasswordForBucket(bucket);
     if (!bucketPassword) {
       error.value = "Password required to access file";
       return;
     }
-
-    console.debug("Password obtained successfully");
 
     const response = await callFileGetApi({ bucketId, fileId });
     const fileData = response.file;
@@ -157,7 +150,12 @@ async function saveFile() {
     return;
   }
 
-  const bucketPassword = passwordStore.getPasswordForBucket(currentFile.bucketId);
+  const bucket = contentStore.getBucketById(currentFile.bucketId);
+  if (!bucket) {
+    await dialogService.alert("Error", "Bucket not found");
+    return;
+  }
+  const bucketPassword = await getOrCollectPasswordForBucket(bucket);
   if (!bucketPassword) {
     await dialogService.alert("Error", "Bucket password not found");
     return;
