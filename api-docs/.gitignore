@@ -1,0 +1,5 @@
+# Don't ignore generated docs - we want to commit them
+# !docs/
+
+# Ignore generator build artifacts
+generator/generator
