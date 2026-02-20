@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>nkrypt.xyz</title>
+
+    <meta charset="utf-8" />
+    <meta name="description" content="Encrypted file storage with end-to-end encryption" />
+    <meta name="format-detection" content="telephone=no" />
+    <meta name="msapplication-tap-highlight" content="no" />
+    <meta
+      id="viewport"
+      name="viewport"
+      content="user-scalable=no, initial-scale=1, maximum-scale=1, minimum-scale=1, width=device-width<% if (ctx.mode.cordova || ctx.mode.capacitor) { %>, viewport-fit=cover<% } %>"
+    />
+
+    <link rel="icon" type="image/png" sizes="128x128" href="icons/favicon-128x128.png" />
+    <link rel="icon" type="image/png" sizes="96x96" href="icons/favicon-96x96.png" />
+    <link rel="icon" type="image/png" sizes="32x32" href="icons/favicon-32x32.png" />
+    <link rel="icon" type="image/png" sizes="16x16" href="icons/favicon-16x16.png" />
+    <link rel="icon" type="image/ico" href="favicon.ico" />
+
+    <style>
+      #app-loading {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: #ffffff;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        z-index: 9999;
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      }
+
+      .spinner {
+        width: 50px;
+        height: 50px;
+        border: 4px solid #f3f3f3;
+        border-top: 4px solid #1976d2;
+        border-radius: 50%;
+        animation: spin 1s linear infinite;
+        margin-bottom: 20px;
+      }
+
+      @keyframes spin {
+        0% {
+          transform: rotate(0deg);
+        }
+        100% {
+          transform: rotate(360deg);
+        }
+      }
+
+      .loading-text {
+        color: #666;
+        font-size: 16px;
+      }
+
+      .hidden {
+        display: none !important;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="app-loading" class="hidden">
+      <div class="spinner"></div>
+      <div class="loading-text">Loading nkrypt.xyz...</div>
+    </div>
+
+    <script type="text/javascript">
+      const appLoading = document.getElementById("app-loading");
+      const LOADING_APPEAR_DELAY = 1000;
+
+      let showLoadingTimeoutId = setTimeout(() => {
+        if (appLoading) {
+          appLoading.classList.remove("hidden");
+        }
+      }, LOADING_APPEAR_DELAY);
+
+      window.addEventListener("load", () => {
+        clearTimeout(showLoadingTimeoutId);
+        if (appLoading) {
+          appLoading.classList.add("hidden");
+        }
+      });
+    </script>
+    <!-- quasar:entry-point -->
+  </body>
+</html>
