@@ -85,6 +85,13 @@
             <q-item-section>Buckets</q-item-section>
           </q-item>
 
+          <q-item clickable @click="navigateTo('credentials')">
+            <q-item-section avatar>
+              <q-icon name="vpn_key" />
+            </q-item-section>
+            <q-item-section>Credentials</q-item-section>
+          </q-item>
+
           <q-item v-if="isAdmin" clickable @click="navigateTo('users')">
             <q-item-section avatar>
               <q-icon name="group" />

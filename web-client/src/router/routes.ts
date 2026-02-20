@@ -62,6 +62,12 @@ const routes: RouteRecordRaw[] = [
         meta: { requiresAuthentication: true, title: "Settings", backButton: true },
       },
       {
+        path: "credentials",
+        name: "credentials",
+        component: () => import("pages/CredentialsPage.vue"),
+        meta: { requiresAuthentication: true, title: "Credentials", backButton: true },
+      },
+      {
         path: "users",
         name: "users",
         component: () => import("pages/UsersPage.vue"),

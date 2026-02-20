@@ -56,7 +56,6 @@
 import { ref, computed, onMounted, watch } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import { useContentStore } from "stores/content";
-import { usePasswordStore } from "stores/password";
 import { useUIStore } from "stores/ui";
 import { callDirectoryGetApi, callDirectoryCreateApi, callDirectoryMoveApi, callFileMoveApi, callBucketListApi } from "integration/content-apis";
 import { dialogService } from "services/dialog-service";
@@ -82,7 +81,6 @@ import { Bucket, Directory, File, EntityStackItem, ClipboardData } from "models/
 const route = useRoute();
 const router = useRouter();
 const contentStore = useContentStore();
-const passwordStore = usePasswordStore();
 const uiStore = useUIStore();
 
 const isLoading = ref(false);
