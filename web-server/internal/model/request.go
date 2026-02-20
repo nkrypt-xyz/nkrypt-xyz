@@ -153,3 +153,25 @@ type SetFileEncryptedMetaDataRequest struct {
 	FileID            string `json:"fileId" validate:"required,len=16,alphanum"`
 }
 
+// Admin requests
+type AddUserRequest struct {
+	DisplayName string `json:"displayName" validate:"required,min=4,max=128"`
+	UserName    string `json:"userName" validate:"required,min=4,max=32"`
+	Password    string `json:"password" validate:"required,min=8,max=32"`
+}
+
+type SetGlobalPermissionsRequest struct {
+	UserID            string          `json:"userId" validate:"required,len=16,alphanum"`
+	GlobalPermissions map[string]bool `json:"globalPermissions" validate:"required"`
+}
+
+type SetBanningStatusRequest struct {
+	UserID   string `json:"userId" validate:"required,len=16,alphanum"`
+	IsBanned bool   `json:"isBanned"`
+}
+
+type OverwriteUserPasswordRequest struct {
+	UserID      string `json:"userId" validate:"required,len=16,alphanum"`
+	NewPassword string `json:"newPassword" validate:"required,min=8,max=32"`
+}
+
