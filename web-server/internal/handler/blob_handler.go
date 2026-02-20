@@ -7,6 +7,7 @@ import (
 	"github.com/go-chi/chi/v5"
 
 	"github.com/nkrypt-xyz/nkrypt-xyz-web-server/internal/middleware"
+	"github.com/nkrypt-xyz/nkrypt-xyz-web-server/internal/model"
 	"github.com/nkrypt-xyz/nkrypt-xyz-web-server/internal/pkg/apperror"
 	"github.com/nkrypt-xyz/nkrypt-xyz-web-server/internal/service"
 )
@@ -142,8 +143,9 @@ func (h *BlobHandler) Write(w http.ResponseWriter, r *http.Request) {
 	// Delete old blobs
 	_ = h.blobSvc.RemoveAllOtherBlobs(r.Context(), bucketID, fileID, blob.ID)
 
-	SendSuccess(w, map[string]interface{}{
-		"blobId": blob.ID,
+	SendSuccess(w, &model.CreateBlobResponse{
+		HasError: false,
+		BlobID:   blob.ID,
 	})
 }
 
@@ -243,8 +245,9 @@ func (h *BlobHandler) WriteQuantized(w http.ResponseWriter, r *http.Request) {
 		_ = h.blobSvc.RemoveAllOtherBlobs(r.Context(), bucketID, fileID, blobID)
 	}
 
-	SendSuccess(w, map[string]interface{}{
-		"blobId":          blobID,
-		"bytesTransfered": bytesWritten,
+	SendSuccess(w, &model.WriteQuantizedResponse{
+		HasError:         false,
+		BlobID:           blobID,
+		BytesTransferred: bytesWritten,
 	})
 }

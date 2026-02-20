@@ -76,10 +76,11 @@ func (h *UserHandler) Login(w http.ResponseWriter, r *http.Request) {
 
 	sessionResp := model.SessionResponse{ID: session.ID}
 
-	SendSuccess(w, map[string]interface{}{
-		"apiKey":  apiKey,
-		"user":    userResp,
-		"session": sessionResp,
+	SendSuccess(w, &model.LoginResponse{
+		HasError: false,
+		APIKey:   apiKey,
+		User:     userResp,
+		Session:  sessionResp,
 	})
 }
 
@@ -102,10 +103,11 @@ func (h *UserHandler) Assert(w http.ResponseWriter, r *http.Request) {
 
 	sessionResp := model.SessionResponse{ID: authData.SessionID}
 
-	SendSuccess(w, map[string]interface{}{
-		"apiKey":  authData.ApiKey,
-		"user":    userResp,
-		"session": sessionResp,
+	SendSuccess(w, &model.AssertResponse{
+		HasError: false,
+		APIKey:   authData.ApiKey,
+		User:     userResp,
+		Session:  sessionResp,
 	})
 }
 
@@ -128,7 +130,7 @@ func (h *UserHandler) Logout(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	SendSuccess(w, map[string]interface{}{})
+	SendSuccess(w, &model.EmptySuccessResponse{HasError: false})
 }
 
 // LogoutAllSessions expires all sessions for the current user.
@@ -150,7 +152,7 @@ func (h *UserHandler) LogoutAllSessions(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	SendSuccess(w, map[string]interface{}{})
+	SendSuccess(w, &model.EmptySuccessResponse{HasError: false})
 }
 
 // ListAllSessions returns up to 20 sessions for the current user.
@@ -167,8 +169,9 @@ func (h *UserHandler) ListAllSessions(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	SendSuccess(w, map[string]interface{}{
-		"sessionList": sessions,
+	SendSuccess(w, &model.SessionListResponse{
+		HasError:    false,
+		SessionList: sessions,
 	})
 }
 
@@ -182,18 +185,19 @@ func (h *UserHandler) List(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Map to API response format.
-	resp := make([]map[string]interface{}, len(users))
+	resp := make([]model.UserListItemResponse, len(users))
 	for i, u := range users {
-		resp[i] = map[string]interface{}{
-			"userName":    u.UserName,
-			"displayName": u.DisplayName,
-			"_id":         u.ID,
-			"isBanned":    u.IsBanned,
+		resp[i] = model.UserListItemResponse{
+			ID:          u.ID,
+			UserName:    u.UserName,
+			DisplayName: u.DisplayName,
+			IsBanned:    u.IsBanned,
 		}
 	}
 
-	SendSuccess(w, map[string]interface{}{
-		"userList": resp,
+	SendSuccess(w, &model.UserListResponse{
+		HasError: false,
+		UserList: resp,
 	})
 }
 
@@ -240,8 +244,9 @@ func (h *UserHandler) Find(w http.ResponseWriter, r *http.Request) {
 		resp[i] = ur
 	}
 
-	SendSuccess(w, map[string]interface{}{
-		"userList": resp,
+	SendSuccess(w, &model.FindUserResponse{
+		HasError: false,
+		UserList: resp,
 	})
 }
 
@@ -264,7 +269,7 @@ func (h *UserHandler) UpdateProfile(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	SendSuccess(w, map[string]interface{}{})
+	SendSuccess(w, &model.EmptySuccessResponse{HasError: false})
 }
 
 // UpdatePassword changes the authenticated user's password and expires all sessions.
@@ -326,7 +331,7 @@ func (h *UserHandler) UpdatePassword(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	SendSuccess(w, map[string]interface{}{})
+	SendSuccess(w, &model.EmptySuccessResponse{HasError: false})
 }
 
 // helper to build globalPermissions map from user flags.

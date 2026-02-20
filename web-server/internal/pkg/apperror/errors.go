@@ -62,32 +62,39 @@ func DetectHTTPStatusCode(err error) int {
 	}
 }
 
+// SerializedError is the JSON structure for error responses.
+type SerializedError struct {
+	Code    string      `json:"code"`
+	Message string      `json:"message"`
+	Details interface{} `json:"details"`
+}
+
 // SerializeError converts an error to the JSON structure expected by clients.
-func SerializeError(err error) map[string]interface{} {
+func SerializeError(err error) SerializedError {
 	switch e := err.(type) {
 	case *UserError:
-		return map[string]interface{}{
-			"code":    e.Code,
-			"message": e.Message,
-			"details": map[string]interface{}{},
+		return SerializedError{
+			Code:    e.Code,
+			Message: e.Message,
+			Details: map[string]interface{}{},
 		}
 	case *DeveloperError:
-		return map[string]interface{}{
-			"code":    e.Code,
-			"message": e.Message,
-			"details": map[string]interface{}{},
+		return SerializedError{
+			Code:    e.Code,
+			Message: e.Message,
+			Details: map[string]interface{}{},
 		}
 	case *ValidationError:
-		return map[string]interface{}{
-			"code":    "VALIDATION_ERROR",
-			"message": e.Message,
-			"details": e.Details,
+		return SerializedError{
+			Code:    "VALIDATION_ERROR",
+			Message: e.Message,
+			Details: e.Details,
 		}
 	default:
-		return map[string]interface{}{
-			"code":    "GENERIC_SERVER_ERROR",
-			"message": "We have encountered an unexpected server error. It has been logged and administrators will be notified.",
-			"details": map[string]interface{}{},
+		return SerializedError{
+			Code:    "GENERIC_SERVER_ERROR",
+			Message: "We have encountered an unexpected server error. It has been logged and administrators will be notified.",
+			Details: map[string]interface{}{},
 		}
 	}
 }

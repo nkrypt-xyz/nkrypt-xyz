@@ -39,9 +39,10 @@ func (h *BucketHandler) Create(w http.ResponseWriter, r *http.Request) {
 		SendErrorResponse(w, err)
 		return
 	}
-	SendSuccess(w, map[string]interface{}{
-		"bucketId":        bucket.ID,
-		"rootDirectoryId": rootDirID,
+	SendSuccess(w, &model.CreateBucketResponse{
+		HasError:         false,
+		BucketID:         bucket.ID,
+		RootDirectoryID:  rootDirID,
 	})
 }
 
@@ -57,7 +58,7 @@ func (h *BucketHandler) List(w http.ResponseWriter, r *http.Request) {
 		SendErrorResponse(w, err)
 		return
 	}
-	bucketList := make([]map[string]interface{}, 0, len(list))
+	bucketList := make([]model.BucketResponse, 0, len(list))
 	for _, b := range list {
 		var metaData interface{}
 		if len(b.MetaData) > 0 {
@@ -65,29 +66,30 @@ func (h *BucketHandler) List(w http.ResponseWriter, r *http.Request) {
 		} else {
 			metaData = map[string]interface{}{}
 		}
-		auths := make([]map[string]interface{}, 0, len(b.BucketAuthorizations))
+		auths := make([]model.BucketAuthorizationResponse, 0, len(b.BucketAuthorizations))
 		for _, a := range b.BucketAuthorizations {
-			auths = append(auths, map[string]interface{}{
-				"userId":      a.UserID,
-				"notes":       a.Notes,
-				"permissions": a.Permissions,
+			auths = append(auths, model.BucketAuthorizationResponse{
+				UserID:      a.UserID,
+				Notes:      a.Notes,
+				Permissions: a.Permissions,
 			})
 		}
-		bucketList = append(bucketList, map[string]interface{}{
-			"_id":                     b.ID,
-			"name":                    b.Name,
-			"rootDirectoryId":         b.RootDirectoryID,
-			"cryptSpec":               b.CryptSpec,
-			"cryptData":               b.CryptData,
-			"metaData":                metaData,
-			"bucketAuthorizations":    auths,
-			"createdByUserIdentifier": b.CreatedByUserID + "@.",
-			"createdAt":               b.CreatedAt.UnixMilli(),
-			"updatedAt":               b.UpdatedAt.UnixMilli(),
+		bucketList = append(bucketList, model.BucketResponse{
+			ID:                      b.ID,
+			Name:                    b.Name,
+			RootDirectoryID:         b.RootDirectoryID,
+			CryptSpec:               b.CryptSpec,
+			CryptData:               b.CryptData,
+			MetaData:                metaData,
+			BucketAuthorizations:    auths,
+			CreatedByUserIdentifier: b.CreatedByUserID + "@.",
+			CreatedAt:               b.CreatedAt.UnixMilli(),
+			UpdatedAt:               b.UpdatedAt.UnixMilli(),
 		})
 	}
-	SendSuccess(w, map[string]interface{}{
-		"bucketList": bucketList,
+	SendSuccess(w, &model.BucketListResponse{
+		HasError:   false,
+		BucketList: bucketList,
 	})
 }
 
@@ -111,7 +113,7 @@ func (h *BucketHandler) Rename(w http.ResponseWriter, r *http.Request) {
 		SendErrorResponse(w, err)
 		return
 	}
-	SendSuccess(w, map[string]interface{}{})
+	SendSuccess(w, &model.EmptySuccessResponse{HasError: false})
 }
 
 // SetMetaData handles POST /api/bucket/set-metadata
@@ -134,7 +136,7 @@ func (h *BucketHandler) SetMetaData(w http.ResponseWriter, r *http.Request) {
 		SendErrorResponse(w, err)
 		return
 	}
-	SendSuccess(w, map[string]interface{}{})
+	SendSuccess(w, &model.EmptySuccessResponse{HasError: false})
 }
 
 // SetAuthorization handles POST /api/bucket/set-authorization
@@ -157,7 +159,7 @@ func (h *BucketHandler) SetAuthorization(w http.ResponseWriter, r *http.Request)
 		SendErrorResponse(w, err)
 		return
 	}
-	SendSuccess(w, map[string]interface{}{})
+	SendSuccess(w, &model.EmptySuccessResponse{HasError: false})
 }
 
 // Destroy handles POST /api/bucket/destroy
@@ -189,5 +191,5 @@ func (h *BucketHandler) Destroy(w http.ResponseWriter, r *http.Request) {
 		SendErrorResponse(w, err)
 		return
 	}
-	SendSuccess(w, map[string]interface{}{})
+	SendSuccess(w, &model.EmptySuccessResponse{HasError: false})
 }

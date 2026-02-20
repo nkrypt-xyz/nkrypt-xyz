@@ -49,9 +49,12 @@ func sendAuthErrorResponse(w http.ResponseWriter, err error) {
 	statusCode := apperror.DetectHTTPStatusCode(err)
 	serialized := apperror.SerializeError(err)
 
-	response := map[string]interface{}{
-		"hasError": true,
-		"error":    serialized,
+	response := struct {
+		HasError bool                     `json:"hasError"`
+		Error    apperror.SerializedError `json:"error"`
+	}{
+		HasError: true,
+		Error:    serialized,
 	}
 
 	if _, ok := err.(*apperror.UserError); !ok {
