@@ -1,0 +1,32 @@
+// Global styles for the application
+
+.page {
+  display: flex;
+  flex-direction: column;
+}
+
+.std-card {
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+body.body--dark .std-card {
+  background: #1e2538;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+}
+
+.base-table {
+  th {
+    font-weight: 600;
+  }
+
+  td {
+    padding: 12px;
+  }
+}
+
+body.body--dark .base-table {
+  th {
+    background: #1e2538;
+  }
+}
