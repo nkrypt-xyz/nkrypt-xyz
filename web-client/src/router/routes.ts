@@ -1,4 +1,5 @@
 import { RouteRecordRaw } from "vue-router";
+import { GLOBAL_PERMISSION } from "constants/permissions";
 
 const routes: RouteRecordRaw[] = [
   {
@@ -21,7 +22,7 @@ const routes: RouteRecordRaw[] = [
         path: "buckets/create",
         name: "bucket-create",
         component: () => import("pages/BucketCreatePage.vue"),
-        meta: { requiresAuthentication: true, title: "Create Bucket", backButton: true },
+        meta: { requiresAuthentication: true, title: "Create Bucket", backButton: true, requiresPermission: GLOBAL_PERMISSION.CREATE_BUCKET },
       },
       {
         path: "buckets/:bucketId/edit",
@@ -64,13 +65,13 @@ const routes: RouteRecordRaw[] = [
         path: "users",
         name: "users",
         component: () => import("pages/UsersPage.vue"),
-        meta: { requiresAuthentication: true, title: "Users", requiresPermission: "MANAGE_USERS" },
+        meta: { requiresAuthentication: true, title: "Users", requiresPermission: GLOBAL_PERMISSION.MANAGE_ALL_USER },
       },
       {
         path: "users/:userId",
         name: "user-save",
         component: () => import("pages/UserSavePage.vue"),
-        meta: { requiresAuthentication: true, title: "User", backButton: true, requiresPermission: "MANAGE_USERS" },
+        meta: { requiresAuthentication: true, title: "User", backButton: true, requiresPermission: GLOBAL_PERMISSION.MANAGE_ALL_USER },
       },
     ],
   },
