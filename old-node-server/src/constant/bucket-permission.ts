@@ -1,9 +1,0 @@
-enum BucketPermission {
-  MODIFY = "MODIFY",
-  MANAGE_AUTHORIZATION = "MANAGE_AUTHORIZATION",
-  DESTROY = "DESTROY",
-  VIEW_CONTENT = "VIEW_CONTENT",
-  MANAGE_CONTENT = "MANAGE_CONTENT",
-}
-
-export { BucketPermission };
