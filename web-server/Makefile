@@ -1,4 +1,4 @@
-.PHONY: build run dev test test-unit test-integration test-clean lint migrate-up migrate-down docker-build docker-up docker-down
+.PHONY: build run dev test test-unit test-integration test-clean lint migrate-up migrate-down migrate-down-all docker-build docker-up docker-down
 
 build:
 	go build -o bin/nkrypt-server ./cmd/server
@@ -42,6 +42,14 @@ migrate-down:
 		exit 1; \
 	fi
 	@set -a && [ -f .env ] && . ./.env && set +a && migrate -path migrations -database "$$NK_DATABASE_URL" down 1
+
+migrate-down-all:
+	@echo "Rolling back ALL migrations (requires golang-migrate CLI)..."
+	@if ! command -v migrate >/dev/null 2>&1; then \
+		echo "Error: golang-migrate not installed. See README for installation instructions."; \
+		exit 1; \
+	fi
+	@set -a && [ -f .env ] && . ./.env && set +a && echo y | migrate -path migrations -database "$$NK_DATABASE_URL" down
 
 docker-build:
 	docker build -f deploy/docker/Dockerfile -t nkrypt-server .
