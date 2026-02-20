@@ -39,8 +39,8 @@ type FindUserRequest struct {
 // Bucket requests
 type CreateBucketRequest struct {
 	Name      string      `json:"name" validate:"required,min=1,max=64"`
-	CryptSpec string      `json:"cryptSpec" validate:"required,min=1,max=64"`
-	CryptData string      `json:"cryptData" validate:"required,min=1,max=2048"`
+	CryptSpec string      `json:"cryptSpec" validate:"required,min=1,max=512"`
+	CryptData string      `json:"cryptData" validate:"required,min=1,max=4096"`
 	MetaData  interface{} `json:"metaData" validate:"required"`
 }
 
