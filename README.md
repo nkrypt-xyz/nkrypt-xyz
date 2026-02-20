@@ -16,7 +16,7 @@ See **[web-server/README.md](./web-server/README.md)** for quick start instructi
 
 ## Development
 
-See **[Development Guide](./devnotes/)** for local setup and contribution guidelines.
+See **[Development Guide](./dev-docs/)** for local setup and contribution guidelines.
 
 ## Stack
 
