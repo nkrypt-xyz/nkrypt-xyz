@@ -136,12 +136,12 @@ test/                # Integration tests
 
 ## Documentation
 
-- **[API Reference](../devnotes/API.md)** - Complete endpoint documentation
-- **[Architecture](../devnotes/ARCHITECTURE.md)** - System design and patterns
-- **[Database Schema](../devnotes/DATABASE.md)** - Tables, migrations, and relationships
-- **[Contributing](../devnotes/CONTRIBUTING.md)** - Development guidelines
+- **[API Reference](../dev-docs/API.md)** - Complete endpoint documentation
+- **[Architecture](../dev-docs/ARCHITECTURE.md)** - System design and patterns
+- **[Database Schema](../dev-docs/DATABASE.md)** - Tables, migrations, and relationships
+- **[Contributing](../dev-docs/CONTRIBUTING.md)** - Development guidelines
 
 
 ---
 
-**Need help?** See [devnotes/](../devnotes/) for detailed guides.
+**Need help?** See [dev-docs/](../dev-docs/) for detailed guides.
