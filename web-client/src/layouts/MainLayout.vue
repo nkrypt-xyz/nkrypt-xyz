@@ -172,10 +172,7 @@ async function navigateTo(name: string) {
 }
 
 function bucketClicked(bucket: Bucket) {
-  router.push({
-    name: "explore",
-    params: { bucketId: bucket._id, pathMatch: [] },
-  });
+  router.push(`/explore/${bucket._id}`);
 }
 
 function createBucketClicked() {

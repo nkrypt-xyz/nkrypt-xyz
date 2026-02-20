@@ -34,6 +34,7 @@ const routes: RouteRecordRaw[] = [
         name: "explore",
         component: () => import("pages/ExplorePage.vue"),
         meta: { requiresAuthentication: true, title: "Explore", backButton: true },
+        props: true,
       },
       {
         path: "editor/text/:bucketId/:fileId",
