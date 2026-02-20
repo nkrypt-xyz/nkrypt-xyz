@@ -20,12 +20,17 @@ export async function callUserListApi(data: Record<string, never>) {
   return await callPostJsonApi(sessionStore.session!.serverUrl, sessionStore.session!.apiKey, "/api/user/list", data);
 }
 
-export async function callUserCreateApi(data: { userName: string; displayName: string; password: string; globalPermissions: Record<string, boolean> }) {
+export async function callUserFindApi(data: { filters: Array<{ by: string; userId?: string; userName?: string }>; includeGlobalPermissions: boolean }) {
   const sessionStore = useSessionStore();
-  return await callPostJsonApi(sessionStore.session!.serverUrl, sessionStore.session!.apiKey, "/api/user/create", data);
+  return await callPostJsonApi(sessionStore.session!.serverUrl, sessionStore.session!.apiKey, "/api/user/find", data);
 }
 
-export async function callUserUpdateApi(data: { userId: string; displayName: string; globalPermissions: Record<string, boolean> }) {
+export async function callAdminAddUserApi(data: { userName: string; displayName: string; password: string }) {
   const sessionStore = useSessionStore();
-  return await callPostJsonApi(sessionStore.session!.serverUrl, sessionStore.session!.apiKey, "/api/user/update", data);
+  return await callPostJsonApi(sessionStore.session!.serverUrl, sessionStore.session!.apiKey, "/api/admin/iam/add-user", data);
+}
+
+export async function callAdminSetGlobalPermissionsApi(data: { userId: string; globalPermissions: Record<string, boolean> }) {
+  const sessionStore = useSessionStore();
+  return await callPostJsonApi(sessionStore.session!.serverUrl, sessionStore.session!.apiKey, "/api/admin/iam/set-global-permissions", data);
 }

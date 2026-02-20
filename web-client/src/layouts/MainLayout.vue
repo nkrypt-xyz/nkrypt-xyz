@@ -56,7 +56,7 @@
             </q-item>
           </template>
 
-          <q-item clickable @click="createBucketClicked">
+          <q-item v-if="canCreateBucket" clickable @click="createBucketClicked">
             <q-item-section avatar>
               <q-icon name="add" color="primary" />
             </q-item-section>
@@ -135,6 +135,7 @@ import { useSettingsStore } from "stores/settings";
 import { useUIStore } from "stores/ui";
 import { usePasswordStore } from "stores/password";
 import { callBucketListApi } from "integration/content-apis";
+import { GLOBAL_PERMISSION } from "constants/permissions";
 import { dialogService } from "services/dialog-service";
 import { navigationService } from "services/navigation-service";
 import { Bucket } from "models/common";
@@ -151,7 +152,8 @@ const passwordStore = usePasswordStore();
 const leftDrawerOpen = ref(false);
 
 const isDarkMode = computed(() => $q.dark.isActive);
-const isAdmin = computed(() => userStore.hasPermission("MANAGE_USERS"));
+const isAdmin = computed(() => userStore.hasPermission(GLOBAL_PERMISSION.MANAGE_ALL_USER));
+const canCreateBucket = computed(() => userStore.hasPermission(GLOBAL_PERMISSION.CREATE_BUCKET));
 
 function toggleLeftDrawer() {
   leftDrawerOpen.value = !leftDrawerOpen.value;

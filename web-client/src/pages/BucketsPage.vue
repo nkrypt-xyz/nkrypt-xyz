@@ -4,7 +4,7 @@
       <div class="col-12 col-lg-8 offset-lg-2">
         <div class="flex items-center justify-between q-mb-md">
           <div class="text-h5">Buckets</div>
-          <q-btn icon="add" label="Create Bucket" color="primary" @click="createBucketClicked" />
+          <q-btn v-if="canCreateBucket()" icon="add" label="Create Bucket" color="primary" @click="createBucketClicked" />
         </div>
 
         <q-card class="std-card" v-if="isLoading">
@@ -55,7 +55,9 @@ import { ref, onMounted } from "vue";
 import { useRouter } from "vue-router";
 import { useContentStore } from "stores/content";
 import { useUIStore } from "stores/ui";
+import { useUserStore } from "stores/user";
 import { callBucketListApi, callBucketDestroyApi } from "integration/content-apis";
+import { GLOBAL_PERMISSION } from "constants/permissions";
 import { dialogService } from "services/dialog-service";
 import { errorService } from "services/error-service";
 import { Bucket } from "models/common";
@@ -63,8 +65,10 @@ import { Bucket } from "models/common";
 const router = useRouter();
 const contentStore = useContentStore();
 const uiStore = useUIStore();
+const userStore = useUserStore();
 
 const isLoading = ref(true);
+const canCreateBucket = () => userStore.hasPermission(GLOBAL_PERMISSION.CREATE_BUCKET);
 
 function formatDate(timestamp?: number): string {
   if (!timestamp) return "N/A";
