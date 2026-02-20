@@ -1,0 +1,32 @@
+// Dark theme overrides
+
+body.body--dark {
+  background: #121212;
+  color: #cbd5e1;
+}
+
+body.body--dark .q-page {
+  background: #121212;
+}
+
+body.body--dark .q-drawer {
+  background: #1e2538;
+  color: #cbd5e1;
+}
+
+body.body--dark .q-card {
+  background: #1e2538;
+  color: #cbd5e1;
+}
+
+body.body--dark .q-toolbar {
+  background: #1e2538;
+}
+
+body.body--dark .q-item {
+  color: #cbd5e1;
+}
+
+body.body--dark .q-item__label--header {
+  color: #94a3b8;
+}
