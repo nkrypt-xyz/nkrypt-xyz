@@ -10,12 +10,17 @@ import (
 	"github.com/nkrypt-xyz/nkrypt-xyz-web-server/internal/pkg/validate"
 )
 
-// SendSuccess sends a 200 JSON response with hasError: false.
-func SendSuccess(w http.ResponseWriter, data map[string]interface{}) {
-	data["hasError"] = false
+// SendSuccess sends a 200 JSON response. The data must be a struct with hasError: false (e.g. model.CreateDirectoryResponse).
+func SendSuccess(w http.ResponseWriter, data interface{}) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
 	_ = json.NewEncoder(w).Encode(data)
+}
+
+// ErrorResponse is the JSON structure for error responses.
+type ErrorResponse struct {
+	HasError bool                   `json:"hasError"`
+	Error    apperror.SerializedError `json:"error"`
 }
 
 // SendErrorResponse sends an error JSON response according to the spec.
@@ -23,9 +28,9 @@ func SendErrorResponse(w http.ResponseWriter, err error) {
 	statusCode := apperror.DetectHTTPStatusCode(err)
 	serialized := apperror.SerializeError(err)
 
-	response := map[string]interface{}{
-		"hasError": true,
-		"error":    serialized,
+	response := ErrorResponse{
+		HasError: true,
+		Error:    serialized,
 	}
 
 	// Log non-user, non-validation errors.
@@ -70,8 +75,8 @@ func ParseAndValidateBody(r *http.Request, dst interface{}) error {
 // formatValidationErrors converts validator errors into a serializable form.
 func formatValidationErrors(err error) interface{} {
 	// For now, just return the error string; can be enriched later.
-	return map[string]interface{}{
-		"error": err.Error(),
-	}
+	return struct {
+		Error string `json:"error"`
+	}{Error: err.Error()}
 }
 

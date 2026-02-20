@@ -51,10 +51,10 @@ func TestSerializeError(t *testing.T) {
 	err := NewUserError("TEST_CODE", "Test message")
 	serialized := SerializeError(err)
 
-	if serialized["code"] != "TEST_CODE" {
-		t.Errorf("Expected code TEST_CODE, got %v", serialized["code"])
+	if serialized.Code != "TEST_CODE" {
+		t.Errorf("Expected code TEST_CODE, got %v", serialized.Code)
 	}
-	if serialized["message"] != "Test message" {
-		t.Errorf("Expected message 'Test message', got %v", serialized["message"])
+	if serialized.Message != "Test message" {
+		t.Errorf("Expected message 'Test message', got %v", serialized.Message)
 	}
 }

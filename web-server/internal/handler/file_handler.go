@@ -45,8 +45,9 @@ func (h *FileHandler) Create(w http.ResponseWriter, r *http.Request) {
 		SendErrorResponse(w, err)
 		return
 	}
-	SendSuccess(w, map[string]interface{}{
-		"fileId": fileID,
+	SendSuccess(w, &model.CreateFileResponse{
+		HasError: false,
+		FileID:   fileID,
 	})
 }
 
@@ -71,8 +72,9 @@ func (h *FileHandler) Get(w http.ResponseWriter, r *http.Request) {
 		SendErrorResponse(w, apperror.NewUserError("FILE_NOT_IN_BUCKET", "The requested file could not be found in this bucket."))
 		return
 	}
-	SendSuccess(w, map[string]interface{}{
-		"file": fileToMap(file),
+	SendSuccess(w, &model.GetFileResponse{
+		HasError: false,
+		File:     fileToResponse(file),
 	})
 }
 
@@ -100,7 +102,7 @@ func (h *FileHandler) Rename(w http.ResponseWriter, r *http.Request) {
 		SendErrorResponse(w, err)
 		return
 	}
-	SendSuccess(w, map[string]interface{}{})
+	SendSuccess(w, &model.EmptySuccessResponse{HasError: false})
 }
 
 // Move handles POST /api/file/move
@@ -131,7 +133,7 @@ func (h *FileHandler) Move(w http.ResponseWriter, r *http.Request) {
 		SendErrorResponse(w, err)
 		return
 	}
-	SendSuccess(w, map[string]interface{}{})
+	SendSuccess(w, &model.EmptySuccessResponse{HasError: false})
 }
 
 // Delete handles POST /api/file/delete
@@ -163,7 +165,7 @@ func (h *FileHandler) Delete(w http.ResponseWriter, r *http.Request) {
 		SendErrorResponse(w, err)
 		return
 	}
-	SendSuccess(w, map[string]interface{}{})
+	SendSuccess(w, &model.EmptySuccessResponse{HasError: false})
 }
 
 // SetMetaData handles POST /api/file/set-metadata
@@ -190,7 +192,7 @@ func (h *FileHandler) SetMetaData(w http.ResponseWriter, r *http.Request) {
 		SendErrorResponse(w, err)
 		return
 	}
-	SendSuccess(w, map[string]interface{}{})
+	SendSuccess(w, &model.EmptySuccessResponse{HasError: false})
 }
 
 // SetEncryptedMetaData handles POST /api/file/set-encrypted-metadata
@@ -217,5 +219,5 @@ func (h *FileHandler) SetEncryptedMetaData(w http.ResponseWriter, r *http.Reques
 		SendErrorResponse(w, err)
 		return
 	}
-	SendSuccess(w, map[string]interface{}{})
+	SendSuccess(w, &model.EmptySuccessResponse{HasError: false})
 }

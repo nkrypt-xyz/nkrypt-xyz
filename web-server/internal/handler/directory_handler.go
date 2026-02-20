@@ -19,50 +19,46 @@ func NewDirectoryHandler(bucketSvc *service.BucketService, directorySvc *service
 	return &DirectoryHandler{bucketSvc: bucketSvc, directorySvc: directorySvc}
 }
 
-func directoryToMap(d *model.Directory) map[string]interface{} {
+func directoryToResponse(d *model.Directory) model.DirectoryResponse {
 	var metaData interface{}
 	if len(d.MetaData) > 0 {
 		_ = json.Unmarshal(d.MetaData, &metaData)
 	} else {
 		metaData = map[string]interface{}{}
 	}
-	out := map[string]interface{}{
-		"_id":                d.ID,
-		"bucketId":           d.BucketID,
-		"name":               d.Name,
-		"metaData":           metaData,
-		"encryptedMetaData":  d.EncryptedMetaData,
-		"createdByUserIdentifier": d.CreatedByUserID + "@.",
-		"createdAt":          d.CreatedAt.UnixMilli(),
-		"updatedAt":           d.UpdatedAt.UnixMilli(),
+	resp := model.DirectoryResponse{
+		ID:                      d.ID,
+		BucketID:                d.BucketID,
+		ParentDirectoryID:       d.ParentDirectoryID,
+		Name:                    d.Name,
+		MetaData:                metaData,
+		EncryptedMetaData:       d.EncryptedMetaData,
+		CreatedByUserIdentifier: d.CreatedByUserID + "@.",
+		CreatedAt:               d.CreatedAt.UnixMilli(),
+		UpdatedAt:               d.UpdatedAt.UnixMilli(),
 	}
-	if d.ParentDirectoryID != nil {
-		out["parentDirectoryId"] = *d.ParentDirectoryID
-	} else {
-		out["parentDirectoryId"] = nil
-	}
-	return out
+	return resp
 }
 
-func fileToMap(f *model.File) map[string]interface{} {
+func fileToResponse(f *model.File) model.FileResponse {
 	var metaData interface{}
 	if len(f.MetaData) > 0 {
 		_ = json.Unmarshal(f.MetaData, &metaData)
 	} else {
 		metaData = map[string]interface{}{}
 	}
-	return map[string]interface{}{
-		"_id":                       f.ID,
-		"bucketId":                  f.BucketID,
-		"parentDirectoryId":         f.ParentDirectoryID,
-		"name":                      f.Name,
-		"metaData":                  metaData,
-		"encryptedMetaData":         f.EncryptedMetaData,
-		"sizeAfterEncryptionBytes":  f.SizeAfterEncryptionBytes,
-		"createdByUserIdentifier":   f.CreatedByUserID + "@.",
-		"createdAt":                 f.CreatedAt.UnixMilli(),
-		"updatedAt":                 f.UpdatedAt.UnixMilli(),
-		"contentUpdatedAt":          f.ContentUpdatedAt.UnixMilli(),
+	return model.FileResponse{
+		ID:                       f.ID,
+		BucketID:                 f.BucketID,
+		ParentDirectoryID:        f.ParentDirectoryID,
+		Name:                     f.Name,
+		MetaData:                 metaData,
+		EncryptedMetaData:        f.EncryptedMetaData,
+		SizeAfterEncryptionBytes: f.SizeAfterEncryptionBytes,
+		CreatedByUserIdentifier:  f.CreatedByUserID + "@.",
+		CreatedAt:                f.CreatedAt.UnixMilli(),
+		UpdatedAt:                f.UpdatedAt.UnixMilli(),
+		ContentUpdatedAt:         f.ContentUpdatedAt.UnixMilli(),
 	}
 }
 
@@ -91,8 +87,9 @@ func (h *DirectoryHandler) Create(w http.ResponseWriter, r *http.Request) {
 		SendErrorResponse(w, err)
 		return
 	}
-	SendSuccess(w, map[string]interface{}{
-		"directoryId": dirID,
+	SendSuccess(w, &model.CreateDirectoryResponse{
+		HasError:    false,
+		DirectoryID: dirID,
 	})
 }
 
@@ -117,18 +114,19 @@ func (h *DirectoryHandler) Get(w http.ResponseWriter, r *http.Request) {
 		SendErrorResponse(w, err)
 		return
 	}
-	childDirList := make([]map[string]interface{}, 0, len(childDirs))
+	childDirList := make([]model.DirectoryResponse, 0, len(childDirs))
 	for i := range childDirs {
-		childDirList = append(childDirList, directoryToMap(&childDirs[i]))
+		childDirList = append(childDirList, directoryToResponse(&childDirs[i]))
 	}
-	childFileList := make([]map[string]interface{}, 0, len(childFiles))
+	childFileList := make([]model.FileResponse, 0, len(childFiles))
 	for i := range childFiles {
-		childFileList = append(childFileList, fileToMap(&childFiles[i]))
+		childFileList = append(childFileList, fileToResponse(&childFiles[i]))
 	}
-	SendSuccess(w, map[string]interface{}{
-		"directory":         directoryToMap(dir),
-		"childDirectoryList": childDirList,
-		"childFileList":     childFileList,
+	SendSuccess(w, &model.GetDirectoryResponse{
+		HasError:           false,
+		Directory:          directoryToResponse(dir),
+		ChildDirectoryList: childDirList,
+		ChildFileList:      childFileList,
 	})
 }
 
@@ -156,7 +154,7 @@ func (h *DirectoryHandler) Rename(w http.ResponseWriter, r *http.Request) {
 		SendErrorResponse(w, err)
 		return
 	}
-	SendSuccess(w, map[string]interface{}{})
+	SendSuccess(w, &model.EmptySuccessResponse{HasError: false})
 }
 
 // Move handles POST /api/directory/move
@@ -187,7 +185,7 @@ func (h *DirectoryHandler) Move(w http.ResponseWriter, r *http.Request) {
 		SendErrorResponse(w, err)
 		return
 	}
-	SendSuccess(w, map[string]interface{}{})
+	SendSuccess(w, &model.EmptySuccessResponse{HasError: false})
 }
 
 // Delete handles POST /api/directory/delete
@@ -214,7 +212,7 @@ func (h *DirectoryHandler) Delete(w http.ResponseWriter, r *http.Request) {
 		SendErrorResponse(w, err)
 		return
 	}
-	SendSuccess(w, map[string]interface{}{})
+	SendSuccess(w, &model.EmptySuccessResponse{HasError: false})
 }
 
 // SetMetaData handles POST /api/directory/set-metadata
@@ -241,7 +239,7 @@ func (h *DirectoryHandler) SetMetaData(w http.ResponseWriter, r *http.Request) {
 		SendErrorResponse(w, err)
 		return
 	}
-	SendSuccess(w, map[string]interface{}{})
+	SendSuccess(w, &model.EmptySuccessResponse{HasError: false})
 }
 
 // SetEncryptedMetaData handles POST /api/directory/set-encrypted-metadata
@@ -268,5 +266,5 @@ func (h *DirectoryHandler) SetEncryptedMetaData(w http.ResponseWriter, r *http.R
 		SendErrorResponse(w, err)
 		return
 	}
-	SendSuccess(w, map[string]interface{}{})
+	SendSuccess(w, &model.EmptySuccessResponse{HasError: false})
 }

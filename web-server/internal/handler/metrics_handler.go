@@ -4,6 +4,7 @@ import (
 	"net/http"
 
 	"github.com/nkrypt-xyz/nkrypt-xyz-web-server/internal/middleware"
+	"github.com/nkrypt-xyz/nkrypt-xyz-web-server/internal/model"
 	"github.com/nkrypt-xyz/nkrypt-xyz-web-server/internal/pkg/apperror"
 	"github.com/nkrypt-xyz/nkrypt-xyz-web-server/internal/service"
 )
@@ -30,10 +31,11 @@ func (h *MetricsHandler) GetSummary(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	SendSuccess(w, map[string]interface{}{
-		"disk": map[string]interface{}{
-			"usedBytes":  diskUsage.UsedBytes,
-			"totalBytes": diskUsage.TotalBytes,
+	SendSuccess(w, &model.MetricsGetSummaryResponse{
+		HasError: false,
+		Disk: model.MetricsDiskResponse{
+			UsedBytes:  diskUsage.UsedBytes,
+			TotalBytes: diskUsage.TotalBytes,
 		},
 	})
 }

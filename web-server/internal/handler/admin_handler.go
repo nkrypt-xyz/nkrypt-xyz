@@ -4,6 +4,7 @@ import (
 	"net/http"
 
 	"github.com/nkrypt-xyz/nkrypt-xyz-web-server/internal/middleware"
+	"github.com/nkrypt-xyz/nkrypt-xyz-web-server/internal/model"
 	"github.com/nkrypt-xyz/nkrypt-xyz-web-server/internal/pkg/apperror"
 	"github.com/nkrypt-xyz/nkrypt-xyz-web-server/internal/service"
 )
@@ -49,8 +50,9 @@ func (h *AdminHandler) AddUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	SendSuccess(w, map[string]interface{}{
-		"userId": userID,
+	SendSuccess(w, &model.AddUserResponse{
+		HasError: false,
+		UserID:   userID,
 	})
 }
 
@@ -81,7 +83,7 @@ func (h *AdminHandler) SetGlobalPermissions(w http.ResponseWriter, r *http.Reque
 		return
 	}
 
-	SendSuccess(w, map[string]interface{}{})
+	SendSuccess(w, &model.EmptySuccessResponse{HasError: false})
 }
 
 // SetBanningStatus handles POST /api/admin/iam/set-banning-status
@@ -111,7 +113,7 @@ func (h *AdminHandler) SetBanningStatus(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	SendSuccess(w, map[string]interface{}{})
+	SendSuccess(w, &model.EmptySuccessResponse{HasError: false})
 }
 
 // OverwriteUserPassword handles POST /api/admin/iam/overwrite-user-password
@@ -141,6 +143,6 @@ func (h *AdminHandler) OverwriteUserPassword(w http.ResponseWriter, r *http.Requ
 		return
 	}
 
-	SendSuccess(w, map[string]interface{}{})
+	SendSuccess(w, &model.EmptySuccessResponse{HasError: false})
 }
 
