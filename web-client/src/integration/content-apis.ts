@@ -13,7 +13,7 @@ export async function callBucketCreateApi(data: { name: string; cryptSpec: strin
 
 export async function callBucketUpdateApi(data: { bucketId: string; name: string }) {
   const sessionStore = useSessionStore();
-  return await callPostJsonApi(sessionStore.session!.serverUrl, sessionStore.session!.apiKey, "/api/bucket/update", data);
+  return await callPostJsonApi(sessionStore.session!.serverUrl, sessionStore.session!.apiKey, "/api/bucket/rename", data);
 }
 
 export async function callBucketDestroyApi(data: { bucketId: string; name: string }) {
