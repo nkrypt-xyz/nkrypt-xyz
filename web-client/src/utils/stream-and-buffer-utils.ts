@@ -9,9 +9,9 @@ export const convertStreamToBuffer = async (readableStream: ReadableStream): Pro
 
     let arrayBuffer: ArrayBuffer;
     if (chunk instanceof Uint8Array) {
-      arrayBuffer = chunk.buffer;
+      arrayBuffer = chunk.buffer.slice(chunk.byteOffset, chunk.byteOffset + chunk.byteLength) as ArrayBuffer;
     } else {
-      arrayBuffer = chunk;
+      arrayBuffer = chunk as ArrayBuffer;
     }
     arrayBufferList.push(arrayBuffer);
   }

@@ -51,7 +51,7 @@ export const createEncryptionKeyFromPassword = async (encryptionPassword: string
   const key = await window.crypto.subtle.deriveKey(
     {
       name: PASSPHRASE_DERIVEKEY_ALGORITHM,
-      salt,
+      salt: salt as BufferSource,
       iterations: PASSPHRASE_DERIVEKEY_ITERATIONS,
       hash: PASSPHRASE_DERIVEKEY_HASH_ALGORITHM,
     },
@@ -104,7 +104,7 @@ export const encryptText = async (text: string, encryptionPassword: string) => {
   const cipher = await window.crypto.subtle.encrypt(
     {
       name: ENCRYPTION_ALGORITHM,
-      iv: iv,
+      iv: iv as BufferSource,
       tagLength: ENCRYPTION_TAGLENGTH_IN_BITS,
     },
     key,
@@ -155,7 +155,7 @@ export const encryptBuffer = async ({ iv, key }: { iv: Uint8Array; key: CryptoKe
   const encryptedBuffer = await window.crypto.subtle.encrypt(
     {
       name: ENCRYPTION_ALGORITHM,
-      iv: iv,
+      iv: iv as BufferSource,
       tagLength: ENCRYPTION_TAGLENGTH_IN_BITS,
     },
     key,
@@ -169,7 +169,7 @@ export const decryptBuffer = async ({ iv, key }: { iv: Uint8Array; key: CryptoKe
     const decryptedBuffer = await window.crypto.subtle.decrypt(
       {
         name: ENCRYPTION_ALGORITHM,
-        iv: iv,
+        iv: iv as BufferSource,
         tagLength: ENCRYPTION_TAGLENGTH_IN_BITS,
       },
       key,
