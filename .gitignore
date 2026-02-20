@@ -23,3 +23,7 @@ infrastructure/**/secrets/
 
 rewrite-docs/
 outtakes/
+web-client-migration-docs/
+old-web-client/
+old-node-server/
+reference-frontend-project
