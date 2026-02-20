@@ -25,8 +25,8 @@ func main() {
 		log.Fatalf("Failed to resolve docs output path: %v", err)
 	}
 
-	fmt.Println("🔍 Parsing API from:", absWebServerPath)
-	fmt.Println("📝 Generating docs to:", absDocsPath)
+	fmt.Println("Parsing API from:", absWebServerPath)
+	fmt.Println("Generating docs to:", absDocsPath)
 
 	// Parse the API
 	api, err := parser.ParseAPI(absWebServerPath)
@@ -34,12 +34,12 @@ func main() {
 		log.Fatalf("Failed to parse API: %v", err)
 	}
 
-	fmt.Printf("✅ Found %d endpoints\n", len(api.Endpoints))
+	fmt.Printf("Found %d endpoints\n", len(api.Endpoints))
 
 	// Generate documentation
 	if err := writer.GenerateDocs(api, absDocsPath); err != nil {
 		log.Fatalf("Failed to generate docs: %v", err)
 	}
 
-	fmt.Println("✨ Documentation generated successfully!")
+	fmt.Println("Documentation generated successfully!")
 }
