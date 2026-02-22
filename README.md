@@ -10,9 +10,10 @@ Choose your deployment method:
 - **[Bare Metal](./infrastructure/bare-metal/)** - Low-overhead deployment on Linux
 - **[Enterprise (Kubernetes)](./infrastructure/enterprise/)** - Production-grade Terraform + Kubernetes
 
-## Running Locally
+## Running Locally (Quickstart)
 
-See **[web-server/README.md](./web-server/README.md)** for quick start instructions.
+- **Server**: [web-server/README.md](./web-server/README.md) 
+- **Client**: [web-client/README.md](./web-client/README.md)
 
 ## Development
 
