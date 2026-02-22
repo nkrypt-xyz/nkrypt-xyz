@@ -21,7 +21,8 @@ See **[Development Guide](./dev-docs/)** for local setup and contribution guidel
 
 ## Stack
 
-**Application**: Go 1.21+, PostgreSQL 16, Redis 7, MinIO  
+**Web Server**: Go 1.21+, PostgreSQL 16, Redis 7, MinIO  
+**Web Client**: Vue 3, Quasar, Pinia, TypeScript  
 **Infrastructure**: Terraform, Kubernetes, Helm, GitHub Actions
 
 ## License
