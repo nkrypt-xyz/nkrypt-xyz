@@ -9,21 +9,23 @@ import {
   PASSPHRASE_IMPORTKEY_ALGORITHM,
   SALT_LENGTH,
   BUCKET_CRYPTO_SPEC,
-} from "constants/crypto-specs";
-import { testConstants } from "constants/test-constants";
-import { convertSmallBufferToString, convertSmallStringToBuffer, convertSmallUint8ArrayToString } from "./buffer-utils";
+} from "./constants.js";
+import { testConstants } from "./test-constants.js";
+import { convertSmallBufferToString, convertSmallStringToBuffer, convertSmallUint8ArrayToString } from "./buffer-utils.js";
+
+const cryptoApi = globalThis.crypto;
 
 export const makeRandomIv = async () => {
   if (testConstants.WEAKEN_CRYPTO_FOR_TESTING) {
     console.warn("WARNING! using predefined IV for testing ONLY. This significantly reduces the strength of the cryptography and must NEVER be used in production.");
     return { iv: testConstants.TEST_IV };
   }
-  const iv = window.crypto.getRandomValues(new Uint8Array(IV_LENGTH));
+  const iv = cryptoApi.getRandomValues(new Uint8Array(IV_LENGTH));
   return { iv };
 };
 
 export const generateIv = () => {
-  return window.crypto.getRandomValues(new Uint8Array(IV_LENGTH));
+  return cryptoApi.getRandomValues(new Uint8Array(IV_LENGTH));
 };
 
 export const makeRandomSalt = async () => {
@@ -31,7 +33,7 @@ export const makeRandomSalt = async () => {
     console.warn("WARNING! using predefined SALT for testing ONLY. This significantly reduces the strength of the cryptography and must NEVER be used in production.");
     return { salt: testConstants.TEST_SALT };
   }
-  const salt = window.crypto.getRandomValues(new Uint8Array(SALT_LENGTH));
+  const salt = cryptoApi.getRandomValues(new Uint8Array(SALT_LENGTH));
   return { salt };
 };
 
@@ -46,9 +48,9 @@ export const createEncryptionKeyFromPassword = async (encryptionPassword: string
 
   const encodedPassphrase = new TextEncoder().encode(encryptionPassword);
 
-  const keyMaterial = await window.crypto.subtle.importKey("raw", encodedPassphrase, PASSPHRASE_IMPORTKEY_ALGORITHM, false, ["deriveBits", "deriveKey"]);
+  const keyMaterial = await cryptoApi.subtle.importKey("raw", encodedPassphrase, PASSPHRASE_IMPORTKEY_ALGORITHM, false, ["deriveBits", "deriveKey"]);
 
-  const key = await window.crypto.subtle.deriveKey(
+  const key = await cryptoApi.subtle.deriveKey(
     {
       name: PASSPHRASE_DERIVEKEY_ALGORITHM,
       salt: salt as BufferSource,
@@ -69,11 +71,11 @@ export const createEncryptionKeyFromPassword = async (encryptionPassword: string
 
 export const createEncryptionKeyForBucket = async (bucketPassword: string) => {
   const encodedPassphrase = new TextEncoder().encode(bucketPassword);
-  const keyMaterial = await window.crypto.subtle.importKey("raw", encodedPassphrase, "PBKDF2", false, ["deriveBits", "deriveKey"]);
+  const keyMaterial = await cryptoApi.subtle.importKey("raw", encodedPassphrase, "PBKDF2", false, ["deriveBits", "deriveKey"]);
 
   const salt = new Uint8Array(16);
 
-  const key = await window.crypto.subtle.deriveKey(
+  const key = await cryptoApi.subtle.deriveKey(
     {
       name: "PBKDF2",
       salt,
@@ -101,7 +103,7 @@ export const encryptText = async (text: string, encryptionPassword: string) => {
 
   const { iv } = await makeRandomIv();
 
-  const cipher = await window.crypto.subtle.encrypt(
+  const cipher = await cryptoApi.subtle.encrypt(
     {
       name: ENCRYPTION_ALGORITHM,
       iv: iv as BufferSource,
@@ -125,7 +127,7 @@ export const decryptText = async ({ cipher, iv, salt }: { cipher: string; iv: st
 
   const { key } = await createEncryptionKeyFromPassword(encryptionPassword, new Uint8Array(saltBuffer));
 
-  const encodedData = await window.crypto.subtle.decrypt(
+  const encodedData = await cryptoApi.subtle.decrypt(
     {
       name: ENCRYPTION_ALGORITHM,
       iv: new Uint8Array(ivBuffer),
@@ -139,20 +141,20 @@ export const decryptText = async ({ cipher, iv, salt }: { cipher: string; iv: st
   return data;
 };
 
-export const encryptObject = async (object: Record<string, any>, encryptionPassword: string): Promise<string> => {
+export const encryptObject = async (object: Record<string, unknown>, encryptionPassword: string): Promise<string> => {
   const text = JSON.stringify(object);
   const encrypted = await encryptText(text, encryptionPassword);
   return JSON.stringify(encrypted);
 };
 
-export const decryptToObject = async (encryptedText: string, encryptionPassword: string): Promise<any> => {
+export const decryptToObject = async (encryptedText: string, encryptionPassword: string): Promise<unknown> => {
   const encrypted = JSON.parse(encryptedText);
   const decrypted = await decryptText(encrypted, encryptionPassword);
   return JSON.parse(decrypted);
 };
 
 export const encryptBuffer = async ({ iv, key }: { iv: Uint8Array; key: CryptoKey }, buffer: ArrayBuffer): Promise<ArrayBuffer> => {
-  const encryptedBuffer = await window.crypto.subtle.encrypt(
+  const encryptedBuffer = await cryptoApi.subtle.encrypt(
     {
       name: ENCRYPTION_ALGORITHM,
       iv: iv as BufferSource,
@@ -166,7 +168,7 @@ export const encryptBuffer = async ({ iv, key }: { iv: Uint8Array; key: CryptoKe
 
 export const decryptBuffer = async ({ iv, key }: { iv: Uint8Array; key: CryptoKey }, buffer: ArrayBuffer): Promise<ArrayBuffer> => {
   try {
-    const decryptedBuffer = await window.crypto.subtle.decrypt(
+    const decryptedBuffer = await cryptoApi.subtle.decrypt(
       {
         name: ENCRYPTION_ALGORITHM,
         iv: iv as BufferSource,
@@ -193,12 +195,11 @@ export const generateCryptoSpec = async () => {
   };
 };
 
-export const encryptCryptoData = async (password: string, cryptSpec: any): Promise<string> => {
-  const { iv, salt } = cryptSpec;
-  const ivBuffer = convertSmallStringToBuffer(iv);
+export const encryptCryptoData = async (password: string, cryptSpec: { iv: string; salt: string }): Promise<string> => {
+  const { salt } = cryptSpec;
   const saltBuffer = convertSmallStringToBuffer(salt);
 
-  const { key } = await createEncryptionKeyFromPassword(password, new Uint8Array(saltBuffer));
+  await createEncryptionKeyFromPassword(password, new Uint8Array(saltBuffer));
 
   const testData = JSON.stringify({ test: "valid" });
   const encrypted = await encryptText(testData, password);

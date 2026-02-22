@@ -41,7 +41,7 @@
 
 <script setup lang="ts">
 import { ref } from "vue";
-import { decryptToObject } from "utils/crypto-utils";
+import { decryptToObject } from "nkrypt-xyz-core-nodejs";
 import { Directory, File } from "models/common";
 
 const isOpen = ref(false);

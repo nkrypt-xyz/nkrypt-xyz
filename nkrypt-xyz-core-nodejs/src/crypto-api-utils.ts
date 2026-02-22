@@ -1,5 +1,5 @@
-import { BUCKET_CRYPTO_SPEC } from "constants/crypto-specs";
-import { convertSmallStringToBuffer } from "./buffer-utils";
+import { BUCKET_CRYPTO_SPEC } from "./constants.js";
+import { convertSmallStringToBuffer } from "./buffer-utils.js";
 
 export const buildCryptoHeader = (iv: string, salt: string): string => {
   return `${BUCKET_CRYPTO_SPEC}|${iv}|${salt}`;

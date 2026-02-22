@@ -1,6 +1,5 @@
 import { callBlobGetApi } from "integration/content-apis";
-import { createEncryptionKeyFromPassword } from "utils/crypto-utils";
-import { unbuildCryptoHeader } from "utils/crypto-api-utils";
+import { createEncryptionKeyFromPassword, unbuildCryptoHeader } from "nkrypt-xyz-core-nodejs";
 import { File } from "models/common";
 import streamSaver from "streamsaver";
 

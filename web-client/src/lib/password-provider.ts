@@ -1,6 +1,6 @@
 import { usePasswordStore } from "stores/password";
 import { dialogService } from "services/dialog-service";
-import { decryptCryptoData } from "utils/crypto-utils";
+import { decryptCryptoData } from "nkrypt-xyz-core-nodejs";
 import { Bucket } from "models/common";
 
 export async function getOrCollectPasswordForBucket(bucket: Bucket): Promise<string | null> {

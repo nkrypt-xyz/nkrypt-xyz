@@ -33,9 +33,7 @@ import { callBlobGetApi, callBlobSetApi, callFileGetApi, callBucketListApi, Blob
 import { dialogService } from "services/dialog-service";
 import { errorService } from "services/error-service";
 import { getOrCollectPasswordForBucket } from "lib/password-provider";
-import { createEncryptionKeyFromPassword, makeRandomIv, makeRandomSalt } from "utils/crypto-utils";
-import { buildCryptoHeader, unbuildCryptoHeader } from "utils/crypto-api-utils";
-import { convertSmallUint8ArrayToString } from "utils/buffer-utils";
+import { createEncryptionKeyFromPassword, makeRandomIv, makeRandomSalt, buildCryptoHeader, unbuildCryptoHeader, convertSmallUint8ArrayToString } from "nkrypt-xyz-core-nodejs";
 import { File } from "models/common";
 
 const route = useRoute();
