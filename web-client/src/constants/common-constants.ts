@@ -1,4 +1,4 @@
-import { BLOB_CHUNK_SIZE_INCLUDING_TAG_BYTES } from "./crypto-specs";
+import { BLOB_CHUNK_SIZE_INCLUDING_TAG_BYTES } from "nkrypt-xyz-core-nodejs";
 
 export const CommonConstant = {
   APP_VERSION: "2.0.0",

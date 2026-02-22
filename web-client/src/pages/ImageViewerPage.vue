@@ -35,8 +35,7 @@ import { callBlobGetApi, callFileGetApi, callBucketListApi } from "integration/c
 import { errorService } from "services/error-service";
 import { getOrCollectPasswordForBucket } from "lib/password-provider";
 import { downloadFileWithDecryption } from "lib/file-download";
-import { createEncryptionKeyFromPassword } from "utils/crypto-utils";
-import { unbuildCryptoHeader } from "utils/crypto-api-utils";
+import { createEncryptionKeyFromPassword, unbuildCryptoHeader } from "nkrypt-xyz-core-nodejs";
 import { File } from "models/common";
 
 const route = useRoute();

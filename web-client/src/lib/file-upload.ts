@@ -1,7 +1,5 @@
 import { callFileCreateApi, callBlobSetApi } from "integration/content-apis";
-import { encryptObject, createEncryptionKeyFromPassword, makeRandomIv, makeRandomSalt } from "utils/crypto-utils";
-import { buildCryptoHeader } from "utils/crypto-api-utils";
-import { convertSmallUint8ArrayToString } from "utils/buffer-utils";
+import { encryptObject, createEncryptionKeyFromPassword, makeRandomIv, makeRandomSalt, buildCryptoHeader, convertSmallUint8ArrayToString } from "nkrypt-xyz-core-nodejs";
 import { MetaDataConstant } from "constants/meta-data-constants";
 import { MiscConstant } from "constants/misc-constants";
 import { CommonConstant } from "constants/common-constants";

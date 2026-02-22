@@ -5,7 +5,7 @@ const { configure } = require("quasar/wrappers");
 module.exports = configure(function (/* ctx */) {
   return {
     eslint: {
-      exclude: ["src-pwa/**/*"],
+      exclude: ["src-pwa/**/*", "node_modules/nkrypt-xyz-core-nodejs/**/*"],
       warnings: true,
       errors: true,
     },

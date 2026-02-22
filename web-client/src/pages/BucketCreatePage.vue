@@ -48,7 +48,7 @@ import { useUIStore } from "stores/ui";
 import { callBucketCreateApi } from "integration/content-apis";
 import { dialogService } from "services/dialog-service";
 import { errorService } from "services/error-service";
-import { generateCryptoSpec, encryptCryptoData } from "utils/crypto-utils";
+import { generateCryptoSpec, encryptCryptoData } from "nkrypt-xyz-core-nodejs";
 import { MetaDataConstant } from "constants/meta-data-constants";
 import { MiscConstant } from "constants/misc-constants";
 import { CommonConstant } from "constants/common-constants";

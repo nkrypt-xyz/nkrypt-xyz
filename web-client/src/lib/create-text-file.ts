@@ -1,5 +1,5 @@
 import { callFileCreateApi } from "integration/content-apis";
-import { encryptObject } from "utils/crypto-utils";
+import { encryptObject } from "nkrypt-xyz-core-nodejs";
 import { MetaDataConstant } from "constants/meta-data-constants";
 import { MiscConstant } from "constants/misc-constants";
 import { CommonConstant } from "constants/common-constants";

@@ -11,7 +11,8 @@
     "format": "prettier --write \"**/*.{js,ts,vue,scss,html,md,json}\" --ignore-path .gitignore",
     "test": "echo \"No test specified\" && exit 0",
     "dev": "quasar dev",
-    "build": "npm run check && quasar build",
+    "build": "npm run build:core && npm run check && quasar build",
+    "build:core": "npm run build --prefix ../nkrypt-xyz-core-nodejs",
     "build-spa": "quasar build -m spa",
     "type-check": "vue-tsc --noEmit --skipLibCheck",
     "type-check:watch": "vue-tsc --noEmit --watch --skipLibCheck",
@@ -19,6 +20,7 @@
     "check": "npm run lint && npm run type-check"
   },
   "dependencies": {
+    "nkrypt-xyz-core-nodejs": "file:../nkrypt-xyz-core-nodejs",
     "@quasar/extras": "^1.0.0",
     "pinia": "^2.1.4",
     "quasar": "^2.6.0",
