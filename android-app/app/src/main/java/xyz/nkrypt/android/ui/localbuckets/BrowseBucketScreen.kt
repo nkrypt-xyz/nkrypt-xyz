@@ -25,7 +25,7 @@ import androidx.compose.material.icons.filled.Download
 import androidx.compose.material.icons.filled.Folder
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.DriveFileMove
-import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Upload
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -88,6 +88,7 @@ fun BrowseBucketScreen(
     var showRenameDialog by remember { mutableStateOf(false) }
     var renameName by remember { mutableStateOf("") }
     var pendingDownloadTarget by remember { mutableStateOf<DownloadTarget?>(null) }
+    var metadataTarget by remember { mutableStateOf<ContextMenuTarget?>(null) }
 
     val filePickerLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.GetContent()
@@ -245,6 +246,17 @@ fun BrowseBucketScreen(
                         Spacer(modifier = Modifier.height(16.dp))
                         TextButton(
                             onClick = {
+                                metadataTarget = target
+                                contextMenuTarget = null
+                            }
+                        ) {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Icon(Icons.Default.Info, contentDescription = null, modifier = Modifier.padding(end = 8.dp))
+                                Text("View metadata")
+                            }
+                        }
+                        TextButton(
+                            onClick = {
                                 pendingDownloadTarget = when (target) {
                                     is ContextMenuTarget.Dir -> DownloadTarget.Directory(target.dir)
                                     is ContextMenuTarget.File -> DownloadTarget.File(target.file)
@@ -283,6 +295,20 @@ fun BrowseBucketScreen(
                         TextButton(onClick = { contextMenuTarget = null }) { Text("Cancel") }
                     }
                 }
+            )
+        }
+        if (metadataTarget != null) {
+            val target = metadataTarget!!
+            MetadataDialog(
+                directory = when (target) {
+                    is ContextMenuTarget.Dir -> target.dir
+                    else -> null
+                },
+                file = when (target) {
+                    is ContextMenuTarget.File -> target.file
+                    else -> null
+                },
+                onDismiss = { metadataTarget = null }
             )
         }
         if (showRenameDialog && renameTarget != null) {

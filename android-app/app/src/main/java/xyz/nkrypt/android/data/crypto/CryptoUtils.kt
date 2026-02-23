@@ -1,6 +1,7 @@
 package xyz.nkrypt.android.data.crypto
 
 import android.util.Base64
+import java.security.MessageDigest
 import java.security.SecureRandom
 import javax.crypto.Cipher
 import javax.crypto.SecretKey
@@ -39,6 +40,16 @@ object CryptoUtils {
         val iv = ByteArray(CryptoConstants.IV_LENGTH)
         secureRandom.nextBytes(iv)
         return iv
+    }
+
+    /**
+     * Compute SHA-256 hash of content (hex string).
+     * Used for file integrity and efficient sync.
+     */
+    fun computeContentHash(content: ByteArray): String {
+        val digest = MessageDigest.getInstance(CryptoConstants.CONTENT_HASH_ALGORITHM)
+        val hashBytes = digest.digest(content)
+        return hashBytes.joinToString("") { "%02x".format(it) }
     }
 
     /**

@@ -44,6 +44,12 @@ android {
     buildFeatures {
         compose = true
     }
+
+    testOptions {
+        unitTests.all {
+            it.jvmArgs("-Duser.home=${project.rootProject.projectDir}/.android")
+        }
+    }
 }
 
 dependencies {

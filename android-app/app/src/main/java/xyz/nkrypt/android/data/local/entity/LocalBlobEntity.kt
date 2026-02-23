@@ -25,5 +25,7 @@ data class LocalBlobEntity(
     val blobPath: String,
     val ivBase64: String,
     val saltBase64: String,
+    val contentHashHex: String?,
+    val contentHashSaltBase64: String?,
     val createdAt: Long
 )

@@ -2,6 +2,8 @@ package xyz.nkrypt.android.di
 
 import android.content.Context
 import androidx.room.Room
+import androidx.room.migration.Migration
+import androidx.sqlite.db.SupportSQLiteDatabase
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -25,10 +27,18 @@ object AppModule {
     @Singleton
     fun provideContext(@ApplicationContext context: Context): Context = context
 
+    private val MIGRATION_5_6 = object : Migration(5, 6) {
+        override fun migrate(db: SupportSQLiteDatabase) {
+            db.execSQL("ALTER TABLE local_blobs ADD COLUMN contentHashHex TEXT")
+            db.execSQL("ALTER TABLE local_blobs ADD COLUMN contentHashSaltBase64 TEXT")
+        }
+    }
+
     @Provides
     @Singleton
     fun provideAppDatabase(@ApplicationContext context: Context): AppDatabase =
         Room.databaseBuilder(context, AppDatabase::class.java, "nkrypt.db")
+            .addMigrations(MIGRATION_5_6)
             .fallbackToDestructiveMigration()
             .build()
 

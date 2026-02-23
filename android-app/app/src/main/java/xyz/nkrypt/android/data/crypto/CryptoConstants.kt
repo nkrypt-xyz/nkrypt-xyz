@@ -12,4 +12,10 @@ object CryptoConstants {
     const val KEY_LENGTH_BITS = 256
     const val GCM_TAG_LENGTH_BITS = 128
     const val ENCRYPTION_ALGORITHM = "AES/GCM/NoPadding"
+
+    // Content hash spec (matches nkrypt-xyz-core-nodejs for sync compatibility)
+    const val CONTENT_HASH_ALGORITHM = "SHA-256"
+    const val CONTENT_HASH_SALT_LENGTH = 16
+    const val CONTENT_HASH_META_KEY_HASH = "content_hash"
+    const val CONTENT_HASH_META_KEY_SALT = "content_hash_salt"
 }

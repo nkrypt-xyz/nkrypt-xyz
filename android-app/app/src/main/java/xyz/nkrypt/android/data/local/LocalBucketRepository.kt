@@ -2,6 +2,7 @@ package xyz.nkrypt.android.data.local
 
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
+import xyz.nkrypt.android.data.crypto.CryptoConstants
 import xyz.nkrypt.android.data.crypto.CryptoUtils
 import xyz.nkrypt.android.data.local.dao.LocalBlobDao
 import xyz.nkrypt.android.data.local.dao.LocalBucketDao
@@ -267,13 +268,19 @@ class LocalBucketRepository @Inject constructor(
         val blobFile = File(bucket.rootPath, blobPath)
         blobFile.parentFile?.mkdirs()
         blobFile.writeBytes(encrypted)
+
+        val contentHash = CryptoUtils.computeContentHash(content)
+        val contentHashSalt = CryptoUtils.generateSalt()
+        val contentHashSaltBase64 = android.util.Base64.encodeToString(contentHashSalt, android.util.Base64.NO_WRAP)
+        val hashMetaData = """{"${CryptoConstants.CONTENT_HASH_META_KEY_HASH}":"$contentHash","${CryptoConstants.CONTENT_HASH_META_KEY_SALT}":"$contentHashSaltBase64"}"""
+
         val fileEntity = LocalFileEntity(
             id = fileId,
             bucketId = bucket.id,
             directoryId = directoryId,
             name = name,
             sizeInBytes = content.size.toLong(),
-            metaData = "{}",
+            metaData = hashMetaData,
             encryptedMetaData = "",
             createdAt = System.currentTimeMillis()
         )
@@ -284,6 +291,8 @@ class LocalBucketRepository @Inject constructor(
             blobPath = blobPath,
             ivBase64 = android.util.Base64.encodeToString(iv, android.util.Base64.NO_WRAP),
             saltBase64 = android.util.Base64.encodeToString(salt, android.util.Base64.NO_WRAP),
+            contentHashHex = contentHash,
+            contentHashSaltBase64 = contentHashSaltBase64,
             createdAt = System.currentTimeMillis()
         )
         fileDao.insert(fileEntity)

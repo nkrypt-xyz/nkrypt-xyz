@@ -46,6 +46,28 @@ class CryptoUtilsTest {
     }
 
     @Test
+    fun computeContentHash_sameContent_sameHash() {
+        val content = "Hello, nkrypt!".toByteArray(Charsets.UTF_8)
+        val hash1 = CryptoUtils.computeContentHash(content)
+        val hash2 = CryptoUtils.computeContentHash(content)
+        assertEquals(hash1, hash2)
+        assertEquals(64, hash1.length) // SHA-256 hex = 64 chars
+    }
+
+    @Test
+    fun computeContentHash_differentContent_differentHash() {
+        val hash1 = CryptoUtils.computeContentHash("foo".toByteArray(Charsets.UTF_8))
+        val hash2 = CryptoUtils.computeContentHash("bar".toByteArray(Charsets.UTF_8))
+        assert(hash1 != hash2)
+    }
+
+    @Test
+    fun computeContentHash_emptyContent_knownSha256() {
+        val hash = CryptoUtils.computeContentHash(ByteArray(0))
+        assertEquals("e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855", hash)
+    }
+
+    @Test
     fun wrongPassword_decryptText_throws() {
         val payload = CryptoUtils.encryptText("secret", "correct-password")
         try {
