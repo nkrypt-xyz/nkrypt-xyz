@@ -1,8 +1,5 @@
 package xyz.nkrypt.android.ui.localbuckets
 
-import android.net.Uri
-import androidx.activity.compose.rememberLauncherForActivityResult
-import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
@@ -44,6 +41,9 @@ import kotlinx.coroutines.launch
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import xyz.nkrypt.android.data.local.entity.LocalBucketEntity
+import xyz.nkrypt.android.ui.filepicker.FilePickerMode
+import xyz.nkrypt.android.util.showSuccessToast
+import xyz.nkrypt.android.ui.filepicker.FilePickerScreen
 
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
@@ -59,29 +59,41 @@ fun LocalBucketsScreen(
     var metadataBucket by remember { mutableStateOf<LocalBucketEntity?>(null) }
     var bucketToDelete by remember { mutableStateOf<LocalBucketEntity?>(null) }
     var bucketToDownload by remember { mutableStateOf<LocalBucketEntity?>(null) }
+    var showCreateDirPicker by remember { mutableStateOf(false) }
+    var showDownloadDirPicker by remember { mutableStateOf(false) }
 
-    val directoryPickerLauncher = rememberLauncherForActivityResult(
-        ActivityResultContracts.OpenDocumentTree()
-    ) { uri: Uri? ->
-        if (uri != null) {
-            viewModel.onDirectorySelected(context, uri)
+    when {
+        showCreateDirPicker -> {
+            FilePickerScreen(
+                mode = FilePickerMode.DIRECTORY,
+                onSelect = { path ->
+                    viewModel.onDirectorySelectedPath(path)
+                    showCreateDirPicker = false
+                },
+                onDismiss = { showCreateDirPicker = false },
+                message = "Select where to store the local bucket"
+            )
         }
-    }
-
-    val downloadDirPickerLauncher = rememberLauncherForActivityResult(
-        ActivityResultContracts.OpenDocumentTree()
-    ) { uri: Uri? ->
-        uri?.let { treeUri ->
-            val bucket = bucketToDownload
-            if (bucket != null) {
-                scope.launch {
-                    viewModel.downloadBucketToDirectory(bucket, treeUri, context)
+        showDownloadDirPicker && bucketToDownload != null -> {
+            val bucket = bucketToDownload!!
+            FilePickerScreen(
+                mode = FilePickerMode.DIRECTORY,
+                onSelect = { path ->
+                    scope.launch {
+                        viewModel.downloadBucketToDirectory(bucket, path)
+                        showSuccessToast(context, "Download completed.")
+                        bucketToDownload = null
+                        showDownloadDirPicker = false
+                    }
+                },
+                onDismiss = {
                     bucketToDownload = null
-                }
-            }
+                    showDownloadDirPicker = false
+                },
+                message = "Select where to download the bucket"
+            )
         }
-    }
-
+        else -> {
     Scaffold(
         floatingActionButton = {
             FloatingActionButton(
@@ -197,7 +209,7 @@ fun LocalBucketsScreen(
                             onClick = {
                                 bucketToDownload = bucket
                                 contextMenuBucket = null
-                                downloadDirPickerLauncher.launch(null)
+                                showDownloadDirPicker = true
                             }
                         ) {
                             Row(verticalAlignment = Alignment.CenterVertically) {
@@ -258,10 +270,12 @@ fun LocalBucketsScreen(
         CreateBucketDialog(
             state = state,
             onDismiss = { viewModel.dismissCreateDialog() },
-            onSelectLocation = { directoryPickerLauncher.launch(null) },
+            onSelectLocation = { showCreateDirPicker = true },
             onCreate = { name, password ->
                 viewModel.createBucket(name, password)
             }
         )
+    }
+        }
     }
 }

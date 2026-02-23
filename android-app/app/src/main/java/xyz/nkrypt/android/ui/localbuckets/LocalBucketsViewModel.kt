@@ -1,10 +1,6 @@
 package xyz.nkrypt.android.ui.localbuckets
 
 import android.content.Context
-import android.content.Intent
-import android.net.Uri
-import android.provider.DocumentsContract
-import androidx.documentfile.provider.DocumentFile
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import androidx.lifecycle.ViewModel
@@ -19,7 +15,7 @@ import xyz.nkrypt.android.data.local.MasterPasswordStore
 import xyz.nkrypt.android.data.local.entity.LocalBucketEntity
 import xyz.nkrypt.android.data.local.entity.LocalDirectoryEntity
 import xyz.nkrypt.android.data.local.entity.LocalFileEntity
-import xyz.nkrypt.android.util.uniqueFileName
+import xyz.nkrypt.android.util.uniqueFileNameForFile
 import javax.inject.Inject
 
 @HiltViewModel
@@ -53,12 +49,7 @@ class LocalBucketsViewModel @Inject constructor(
         pendingPath = null
     }
 
-    fun onDirectorySelected(context: Context, uri: Uri) {
-        context.contentResolver.takePersistableUriPermission(
-            uri,
-            Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_GRANT_WRITE_URI_PERMISSION
-        )
-        val path = getPathFromUri(uri)
+    fun onDirectorySelectedPath(path: String) {
         if (path.isNotBlank()) {
             pendingPath = path
             _createDialogState.value = CreateBucketDialogState(selectedPath = path)
@@ -90,22 +81,19 @@ class LocalBucketsViewModel @Inject constructor(
         }
     }
 
-    suspend fun downloadBucketToDirectory(bucket: LocalBucketEntity, destTreeUri: Uri, context: Context) {
+    suspend fun downloadBucketToDirectory(bucket: LocalBucketEntity, destPath: String) {
         val masterPassword = masterPasswordStore.getMasterPassword() ?: return
         val bucketPassword = repository.decryptBucketPassword(bucket.cryptData, masterPassword)
-        context.contentResolver.takePersistableUriPermission(
-            destTreeUri,
-            Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_GRANT_WRITE_URI_PERMISSION
-        )
         withContext(Dispatchers.IO) {
-            val root = DocumentFile.fromTreeUri(context, destTreeUri) ?: return@withContext
+            val rootDir = java.io.File(destPath)
+            rootDir.mkdirs()
             val rootDirs = repository.getDirectories(bucket.id, null)
             val rootFiles = repository.getFiles(bucket.id, null)
             for (dir in rootDirs) {
-                downloadDirectoryRecursive(repository, bucket, bucketPassword, dir, root, context)
+                downloadDirectoryRecursive(repository, bucket, bucketPassword, dir, rootDir)
             }
             for (file in rootFiles) {
-                downloadFile(repository, bucket, bucketPassword, file, root, context)
+                downloadFile(repository, bucket, bucketPassword, file, rootDir)
             }
         }
     }
@@ -115,13 +103,11 @@ class LocalBucketsViewModel @Inject constructor(
         bucket: LocalBucketEntity,
         bucketPassword: String,
         file: LocalFileEntity,
-        parentDir: DocumentFile,
-        context: Context
+        parentDir: java.io.File
     ) {
         val content = repo.readFileContent(bucket, file.id, bucketPassword) ?: return
-        val name = uniqueFileName(parentDir, file.name)
-        val docFile = parentDir.createFile("application/octet-stream", name) ?: return
-        context.contentResolver.openOutputStream(docFile.uri)?.use { it.write(content) }
+        val name = uniqueFileNameForFile(parentDir, file.name)
+        java.io.File(parentDir, name).writeBytes(content)
     }
 
     private suspend fun downloadDirectoryRecursive(
@@ -129,10 +115,10 @@ class LocalBucketsViewModel @Inject constructor(
         bucket: LocalBucketEntity,
         bucketPassword: String,
         dir: LocalDirectoryEntity,
-        parentDir: DocumentFile,
-        context: Context
+        parentDir: java.io.File
     ) {
-        val targetDir = parentDir.createDirectory(dir.name) ?: return
+        val targetDir = java.io.File(parentDir, dir.name)
+        targetDir.mkdirs()
         val files = repo.getFilesRecursive(bucket.id, dir.id)
         for (file in files) {
             val content = repo.readFileContent(bucket, file.id, bucketPassword) ?: continue
@@ -142,38 +128,18 @@ class LocalBucketsViewModel @Inject constructor(
             } else {
                 findOrCreateDirectory(targetDir, relPath)
             }
-            val name = fileParentDir?.let { uniqueFileName(it, file.name) } ?: file.name
-            val docFile = fileParentDir?.createFile("application/octet-stream", name) ?: continue
-            context.contentResolver.openOutputStream(docFile.uri)?.use { it.write(content) }
+            val name = uniqueFileNameForFile(fileParentDir, file.name)
+            java.io.File(fileParentDir, name).writeBytes(content)
         }
     }
 
-    private fun findOrCreateDirectory(parent: DocumentFile, path: String): DocumentFile? {
+    private fun findOrCreateDirectory(parent: java.io.File, path: String): java.io.File {
         val parts = path.split("/").filter { it.isNotBlank() }
         var current = parent
         for (name in parts) {
-            var child = current.findFile(name)
-            if (child == null || !child.isDirectory) {
-                child = current.createDirectory(name)
-            }
-            current = child ?: return null
+            current = java.io.File(current, name).also { it.mkdirs() }
         }
         return current
     }
 
-    private fun getPathFromUri(uri: Uri): String {
-        val docId = DocumentsContract.getTreeDocumentId(uri)
-        val split = docId.split(":")
-        return when {
-            split.size >= 2 -> {
-                val type = split[0]
-                val path = split[1]
-                when (type) {
-                    "primary" -> "/storage/emulated/0/$path"
-                    else -> "/storage/$type/$path"
-                }
-            }
-            else -> uri.path ?: ""
-        }
-    }
 }

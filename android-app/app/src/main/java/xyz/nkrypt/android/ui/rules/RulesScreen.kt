@@ -1,10 +1,5 @@
 package xyz.nkrypt.android.ui.rules
 
-import android.content.Intent
-import android.net.Uri
-import android.provider.DocumentsContract
-import androidx.activity.compose.rememberLauncherForActivityResult
-import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -45,11 +40,12 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import xyz.nkrypt.android.data.local.entity.AutoImportRuleEntity
 import xyz.nkrypt.android.data.local.entity.AutoSyncRuleEntity
+import xyz.nkrypt.android.ui.filepicker.FilePickerMode
+import xyz.nkrypt.android.ui.filepicker.FilePickerScreen
 
 @Composable
 fun RulesScreen(
@@ -58,7 +54,6 @@ fun RulesScreen(
     onNavigateToLocalBuckets: () -> Unit = {},
     onNavigateToRemoteBuckets: () -> Unit = {}
 ) {
-    val context = LocalContext.current
     val importRules by viewModel.importRules.collectAsState()
     val syncRules by viewModel.syncRules.collectAsState()
     val localBuckets by viewModel.localBuckets.collectAsState()
@@ -71,20 +66,21 @@ fun RulesScreen(
 
     var showFabMenu by remember { mutableStateOf(false) }
     val progressState by viewModel.progressState.collectAsState()
+    var showImportDirPicker by remember { mutableStateOf(false) }
 
-    val directoryPickerLauncher = rememberLauncherForActivityResult(
-        ActivityResultContracts.OpenDocumentTree()
-    ) { uri: Uri? ->
-        if (uri != null) {
-            context.contentResolver.takePersistableUriPermission(
-                uri,
-                Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_GRANT_WRITE_URI_PERMISSION
+    when {
+        showImportDirPicker -> {
+            FilePickerScreen(
+                mode = FilePickerMode.DIRECTORY,
+                onSelect = { path ->
+                    viewModel.onImportSourcePathSelected(path)
+                    showImportDirPicker = false
+                },
+                onDismiss = { showImportDirPicker = false },
+                message = "Select the folder to import from"
             )
-            val path = getPathFromUri(uri)
-            viewModel.onImportSourcePathSelected(path)
         }
-    }
-
+        else -> {
     Scaffold(
         floatingActionButton = {
             if (localBuckets.isNotEmpty()) {
@@ -271,7 +267,7 @@ fun RulesScreen(
             selectedSourcePath = importDialogSourcePath,
             editRule = editImportRule,
             onDismiss = { viewModel.dismissImportDialog() },
-            onSelectSource = { directoryPickerLauncher.launch(null) },
+            onSelectSource = { showImportDirPicker = true },
             onCreate = { name, path, bucketId, postAction ->
                 viewModel.createImportRule(name, path, bucketId, postAction)
             },
@@ -280,7 +276,6 @@ fun RulesScreen(
             }
         )
     }
-
     if (showSyncDialog) {
         CreateSyncRuleDialog(
             localBuckets = localBuckets,
@@ -295,7 +290,8 @@ fun RulesScreen(
             }
         )
     }
-
+        }
+    }
 }
 
 @Composable
@@ -426,18 +422,3 @@ private fun RuleCard(
     }
 }
 
-private fun getPathFromUri(uri: Uri): String {
-    val docId = DocumentsContract.getTreeDocumentId(uri)
-    val split = docId.split(":")
-    return when {
-        split.size >= 2 -> {
-            val type = split[0]
-            val path = split[1]
-            when (type) {
-                "primary" -> "/storage/emulated/0/$path"
-                else -> "/storage/$type/$path"
-            }
-        }
-        else -> uri.path ?: ""
-    }
-}

@@ -1,8 +1,5 @@
 package xyz.nkrypt.android.ui.localbuckets
 
-import android.net.Uri
-import androidx.activity.compose.rememberLauncherForActivityResult
-import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.combinedClickable
@@ -61,6 +58,9 @@ import kotlinx.coroutines.withContext
 import androidx.hilt.navigation.compose.hiltViewModel
 import xyz.nkrypt.android.data.local.entity.LocalDirectoryEntity
 import xyz.nkrypt.android.data.local.entity.LocalFileEntity
+import xyz.nkrypt.android.ui.filepicker.FilePickerMode
+import xyz.nkrypt.android.util.showSuccessToast
+import xyz.nkrypt.android.ui.filepicker.FilePickerScreen
 
 private sealed class ContextMenuTarget {
     data class Dir(val dir: LocalDirectoryEntity) : ContextMenuTarget()
@@ -89,38 +89,45 @@ fun BrowseBucketScreen(
     var renameName by remember { mutableStateOf("") }
     var pendingDownloadTarget by remember { mutableStateOf<DownloadTarget?>(null) }
     var metadataTarget by remember { mutableStateOf<ContextMenuTarget?>(null) }
+    var showFilePicker by remember { mutableStateOf(false) }
+    var showDownloadDirPicker by remember { mutableStateOf(false) }
 
-    val filePickerLauncher = rememberLauncherForActivityResult(
-        ActivityResultContracts.GetContent()
-    ) { uri: Uri? ->
-        uri?.let {
-            scope.launch {
-                val fileName = context.contentResolver.query(uri, null, null, null, null)?.use { cursor ->
-                    val nameIndex = cursor.getColumnIndex(android.provider.OpenableColumns.DISPLAY_NAME)
-                    if (cursor.moveToFirst() && nameIndex >= 0) cursor.getString(nameIndex) else "file"
-                } ?: "file"
-                val content = withContext(Dispatchers.IO) {
-                    context.contentResolver.openInputStream(uri)?.readBytes() ?: ByteArray(0)
-                }
-                viewModel.uploadFile(fileName, content)
-            }
+    when {
+        showFilePicker -> {
+            FilePickerScreen(
+                mode = FilePickerMode.FILE,
+                onSelect = { path ->
+                    scope.launch {
+                        val file = java.io.File(path)
+                        val content = withContext(Dispatchers.IO) { file.readBytes() }
+                        viewModel.uploadFile(file.name, content)
+                        showFilePicker = false
+                    }
+                },
+                onDismiss = { showFilePicker = false },
+                message = "Select file to upload"
+            )
         }
-    }
-
-    val downloadDirPickerLauncher = rememberLauncherForActivityResult(
-        ActivityResultContracts.OpenDocumentTree()
-    ) { uri: Uri? ->
-        uri?.let { treeUri ->
-            val target = pendingDownloadTarget
-            if (target != null) {
-                scope.launch {
-                    viewModel.downloadToDirectory(target, treeUri, context)
+        showDownloadDirPicker && pendingDownloadTarget != null -> {
+            val target = pendingDownloadTarget!!
+            FilePickerScreen(
+                mode = FilePickerMode.DIRECTORY,
+                onSelect = { path ->
+                    scope.launch {
+                        viewModel.downloadToDirectory(target, path, context)
+                        showSuccessToast(context, "Download completed.")
+                        pendingDownloadTarget = null
+                        showDownloadDirPicker = false
+                    }
+                },
+                onDismiss = {
                     pendingDownloadTarget = null
-                }
-            }
+                    showDownloadDirPicker = false
+                },
+                message = "Select where to download files"
+            )
         }
-    }
-
+        else -> {
     Scaffold(
         topBar = {
             TopAppBar(
@@ -172,7 +179,7 @@ fun BrowseBucketScreen(
                             text = { Text("Upload file") },
                             onClick = {
                                 showMenu = false
-                                filePickerLauncher.launch("*/*")
+                                showFilePicker = true
                             },
                             leadingIcon = { Icon(Icons.Default.Upload, contentDescription = null) }
                         )
@@ -262,7 +269,7 @@ fun BrowseBucketScreen(
                                     is ContextMenuTarget.File -> DownloadTarget.File(target.file)
                                 }
                                 contextMenuTarget = null
-                                downloadDirPickerLauncher.launch(null)
+                                showDownloadDirPicker = true
                             }
                         ) {
                             Row(verticalAlignment = Alignment.CenterVertically) {
@@ -397,6 +404,8 @@ fun BrowseBucketScreen(
                     }
                 }
             )
+        }
+    }
         }
     }
 }

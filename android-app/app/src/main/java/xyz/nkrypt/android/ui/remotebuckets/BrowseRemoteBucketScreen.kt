@@ -1,8 +1,5 @@
 package xyz.nkrypt.android.ui.remotebuckets
 
-import android.net.Uri
-import androidx.activity.compose.rememberLauncherForActivityResult
-import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.clickable
@@ -48,6 +45,8 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
@@ -57,8 +56,12 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import android.net.Uri
 import xyz.nkrypt.android.data.remote.api.DirectoryDto
 import xyz.nkrypt.android.data.remote.api.FileDto
+import xyz.nkrypt.android.ui.filepicker.FilePickerMode
+import xyz.nkrypt.android.util.showSuccessToast
+import xyz.nkrypt.android.ui.filepicker.FilePickerScreen
 
 private sealed class RemoteContextMenuTarget {
     data class Dir(val dir: DirectoryDto) : RemoteContextMenuTarget()
@@ -83,23 +86,7 @@ fun BrowseRemoteBucketScreen(
     var renameTarget by remember { mutableStateOf<RemoteContextMenuTarget?>(null) }
     var renameName by remember { mutableStateOf("") }
     var pendingDownloadFileId by remember { mutableStateOf<String?>(null) }
-
-    val filePickerLauncher = rememberLauncherForActivityResult(
-        ActivityResultContracts.GetContent()
-    ) { uri: Uri? ->
-        uri?.let {
-            scope.launch {
-                val fileName = context.contentResolver.query(uri, null, null, null, null)?.use { cursor ->
-                    val nameIndex = cursor.getColumnIndex(android.provider.OpenableColumns.DISPLAY_NAME)
-                    if (cursor.moveToFirst() && nameIndex >= 0) cursor.getString(nameIndex) else "file"
-                } ?: "file"
-                val content = withContext(Dispatchers.IO) {
-                    context.contentResolver.openInputStream(uri)?.readBytes() ?: ByteArray(0)
-                }
-                viewModel.uploadFile(fileName, content)
-            }
-        }
-    }
+    var showFilePicker by remember { mutableStateOf(false) }
 
     val downloadLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.CreateDocument("*/*")
@@ -110,7 +97,8 @@ fun BrowseRemoteBucketScreen(
                 scope.launch {
                     val bytes = viewModel.downloadFileDecrypted(fileId)
                     bytes?.let {
-                        context.contentResolver.openOutputStream(saveUri)?.use { out -> out.write(bytes) }
+                        context.contentResolver.openOutputStream(saveUri)?.use { out -> out.write(it) }
+                        showSuccessToast(context, "Download completed.")
                     }
                     pendingDownloadFileId = null
                 }
@@ -120,6 +108,23 @@ fun BrowseRemoteBucketScreen(
 
     viewModel.loadBucket(bucketId)
 
+    when {
+        showFilePicker -> {
+            FilePickerScreen(
+                mode = FilePickerMode.FILE,
+                onSelect = { path ->
+                    scope.launch {
+                        val file = java.io.File(path)
+                        val content = withContext(Dispatchers.IO) { file.readBytes() }
+                        viewModel.uploadFile(file.name, content)
+                        showFilePicker = false
+                    }
+                },
+                onDismiss = { showFilePicker = false },
+                message = "Select file to upload"
+            )
+        }
+        else -> {
     Scaffold(
         topBar = {
             TopAppBar(
@@ -167,7 +172,7 @@ fun BrowseRemoteBucketScreen(
                         )
                         DropdownMenuItem(
                             text = { Text("Upload file") },
-                            onClick = { showFabMenu = false; filePickerLauncher.launch("*/*") },
+                            onClick = { showFabMenu = false; showFilePicker = true },
                             leadingIcon = { Icon(Icons.Default.Upload, null) }
                         )
                     }
@@ -335,6 +340,8 @@ fun BrowseRemoteBucketScreen(
                     }
                 }
             )
+        }
+    }
         }
     }
 }
