@@ -77,6 +77,8 @@ fun BrowseBucketScreen(
 ) {
     val state by viewModel.state.collectAsState()
     val showNewFolderDialog by viewModel.showNewFolderDialog.collectAsState(initial = false)
+    val createFolderError by viewModel.createFolderError.collectAsState(initial = null)
+    val renameError by viewModel.renameError.collectAsState(initial = null)
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
     var showMenu by remember { mutableStateOf(false) }
@@ -286,7 +288,11 @@ fun BrowseBucketScreen(
         if (showRenameDialog && renameTarget != null) {
             val target = renameTarget!!
             AlertDialog(
-                onDismissRequest = { showRenameDialog = false; renameTarget = null },
+                onDismissRequest = {
+                    showRenameDialog = false
+                    renameTarget = null
+                    viewModel.clearRenameError()
+                },
                 content = {
                     Column {
                         OutlinedTextField(
@@ -295,22 +301,36 @@ fun BrowseBucketScreen(
                             label = { Text("Name") },
                             singleLine = true
                         )
+                        if (renameError != null) {
+                            Text(
+                                text = renameError!!,
+                                color = MaterialTheme.colorScheme.error,
+                                style = MaterialTheme.typography.bodySmall,
+                                modifier = Modifier.padding(top = 8.dp)
+                            )
+                        }
                         Row(modifier = Modifier.padding(top = 16.dp)) {
                             TextButton(
                                 onClick = {
                                     if (renameName.isNotBlank()) {
                                         scope.launch {
-                                            when (target) {
+                                            val success = when (target) {
                                                 is ContextMenuTarget.Dir -> viewModel.renameDirectory(target.dir.id, renameName)
                                                 is ContextMenuTarget.File -> viewModel.renameFile(target.file.id, renameName)
                                             }
-                                            showRenameDialog = false
-                                            renameTarget = null
+                                            if (success) {
+                                                showRenameDialog = false
+                                                renameTarget = null
+                                            }
                                         }
                                     }
                                 }
                             ) { Text("Rename") }
-                            TextButton(onClick = { showRenameDialog = false; renameTarget = null }) { Text("Cancel") }
+                            TextButton(onClick = {
+                                showRenameDialog = false
+                                renameTarget = null
+                                viewModel.clearRenameError()
+                            }) { Text("Cancel") }
                         }
                     }
                 }
@@ -327,6 +347,14 @@ fun BrowseBucketScreen(
                             label = { Text("Folder name") },
                             singleLine = true
                         )
+                        if (createFolderError != null) {
+                            Text(
+                                text = createFolderError!!,
+                                color = MaterialTheme.colorScheme.error,
+                                style = MaterialTheme.typography.bodySmall,
+                                modifier = Modifier.padding(top = 8.dp)
+                            )
+                        }
                         Row(modifier = Modifier.padding(top = 16.dp)) {
                             TextButton(
                                 onClick = {

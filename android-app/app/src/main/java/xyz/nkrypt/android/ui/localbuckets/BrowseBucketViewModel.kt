@@ -48,6 +48,12 @@ class BrowseBucketViewModel @Inject constructor(
     private val _showNewFolderDialog = MutableStateFlow(false)
     val showNewFolderDialog: StateFlow<Boolean> = _showNewFolderDialog.asStateFlow()
 
+    private val _createFolderError = MutableStateFlow<String?>(null)
+    val createFolderError: StateFlow<String?> = _createFolderError.asStateFlow()
+
+    private val _renameError = MutableStateFlow<String?>(null)
+    val renameError: StateFlow<String?> = _renameError.asStateFlow()
+
     private var bucketId: String? = savedStateHandle.get<String>("bucketId")
     private val directoryStack = mutableListOf<String?>()
 
@@ -124,14 +130,23 @@ class BrowseBucketViewModel @Inject constructor(
 
     fun dismissNewFolderDialog() {
         _showNewFolderDialog.value = false
+        _createFolderError.value = null
+    }
+
+    fun clearRenameError() {
+        _renameError.value = null
     }
 
     suspend fun createFolder(name: String) {
         val id = bucketId ?: return
         val dirId = directoryStack.lastOrNull()
-        repository.createDirectory(id, dirId, name)
-        dismissNewFolderDialog()
-        loadContent()
+        try {
+            repository.createDirectory(id, dirId, name)
+            dismissNewFolderDialog()
+            loadContent()
+        } catch (e: IllegalArgumentException) {
+            _createFolderError.value = e.message
+        }
     }
 
     suspend fun uploadFile(fileName: String, content: ByteArray) {
@@ -140,8 +155,12 @@ class BrowseBucketViewModel @Inject constructor(
         val masterPassword = masterPasswordStore.getMasterPassword() ?: return
         val bucketPassword = repository.decryptBucketPassword(bucket.cryptData, masterPassword)
         val dirId = directoryStack.lastOrNull()
-        repository.createFileWithContent(bucket, dirId, fileName, content, bucketPassword)
-        loadContent()
+        try {
+            repository.createFileWithContent(bucket, dirId, fileName, content, bucketPassword)
+            loadContent()
+        } catch (e: IllegalArgumentException) {
+            _state.update { it.copy(error = e.message) }
+        }
     }
 
     suspend fun deleteFile(fileId: String) {
@@ -150,13 +169,22 @@ class BrowseBucketViewModel @Inject constructor(
         loadContent()
     }
 
-    suspend fun renameFile(fileId: String, newName: String) {
-        repository.renameFile(fileId, newName)
-        loadContent()
+    suspend fun renameFile(fileId: String, newName: String): Boolean {
+        val id = bucketId ?: return false
+        return try {
+            repository.renameFile(id, fileId, newName)
+            _renameError.value = null
+            loadContent()
+            true
+        } catch (e: IllegalArgumentException) {
+            _renameError.value = e.message
+            false
+        }
     }
 
     suspend fun moveFile(fileId: String, newDirectoryId: String?) {
-        repository.moveFile(fileId, newDirectoryId)
+        val id = bucketId ?: return
+        repository.moveFile(id, fileId, newDirectoryId)
         loadContent()
     }
 
@@ -166,13 +194,22 @@ class BrowseBucketViewModel @Inject constructor(
         loadContent()
     }
 
-    suspend fun renameDirectory(directoryId: String, newName: String) {
-        repository.renameDirectory(directoryId, newName)
-        loadContent()
+    suspend fun renameDirectory(directoryId: String, newName: String): Boolean {
+        val id = bucketId ?: return false
+        return try {
+            repository.renameDirectory(id, directoryId, newName)
+            _renameError.value = null
+            loadContent()
+            true
+        } catch (e: IllegalArgumentException) {
+            _renameError.value = e.message
+            false
+        }
     }
 
     suspend fun moveDirectory(directoryId: String, newParentId: String?) {
-        repository.moveDirectory(directoryId, newParentId)
+        val id = bucketId ?: return
+        repository.moveDirectory(id, directoryId, newParentId)
         loadContent()
     }
 

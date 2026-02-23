@@ -12,6 +12,9 @@ interface LocalFileDao {
     @Query("SELECT * FROM local_files WHERE bucketId = :bucketId AND (directoryId = :dirId OR (:dirId IS NULL AND directoryId IS NULL)) ORDER BY name")
     suspend fun getByBucketAndDirectory(bucketId: String, dirId: String?): List<LocalFileEntity>
 
+    @Query("SELECT * FROM local_files WHERE bucketId = :bucketId AND name = :name AND (directoryId = :dirId OR (:dirId IS NULL AND directoryId IS NULL)) LIMIT 1")
+    suspend fun getByNameAndDirectory(bucketId: String, dirId: String?, name: String): LocalFileEntity?
+
     @Query("SELECT * FROM local_files WHERE id = :id")
     suspend fun getById(id: String): LocalFileEntity?
 

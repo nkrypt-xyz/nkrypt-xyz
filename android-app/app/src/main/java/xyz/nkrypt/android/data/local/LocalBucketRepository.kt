@@ -101,6 +101,10 @@ class LocalBucketRepository @Inject constructor(
         name: String,
         encryptedMetaData: String = ""
     ): LocalDirectoryEntity {
+        val existing = directoryDao.getByNameAndParent(bucketId, parentId, name)
+        if (existing != null) {
+            throw IllegalArgumentException("A directory with this name already exists in the parent.")
+        }
         val id = generateId16()
         val entity = LocalDirectoryEntity(
             id = id,
@@ -183,11 +187,21 @@ class LocalBucketRepository @Inject constructor(
         fileDao.deleteById(fileId)
     }
 
-    suspend fun renameFile(fileId: String, newName: String) {
+    suspend fun renameFile(bucketId: String, fileId: String, newName: String) {
+        val file = fileDao.getById(fileId) ?: return
+        val existing = fileDao.getByNameAndDirectory(bucketId, file.directoryId, newName)
+        if (existing != null && existing.id != fileId) {
+            throw IllegalArgumentException("A file with this name already exists in the directory.")
+        }
         fileDao.rename(fileId, newName)
     }
 
-    suspend fun moveFile(fileId: String, newDirectoryId: String?) {
+    suspend fun moveFile(bucketId: String, fileId: String, newDirectoryId: String?) {
+        val file = fileDao.getById(fileId) ?: return
+        val existing = fileDao.getByNameAndDirectory(bucketId, newDirectoryId, file.name)
+        if (existing != null && existing.id != fileId) {
+            throw IllegalArgumentException("A file with this name already exists in the target directory.")
+        }
         fileDao.move(fileId, newDirectoryId)
     }
 
@@ -214,11 +228,21 @@ class LocalBucketRepository @Inject constructor(
         directoryDao.deleteById(directoryId)
     }
 
-    suspend fun renameDirectory(directoryId: String, newName: String) {
+    suspend fun renameDirectory(bucketId: String, directoryId: String, newName: String) {
+        val dir = directoryDao.getById(directoryId) ?: return
+        val existing = directoryDao.getByNameAndParent(bucketId, dir.parentDirectoryId, newName)
+        if (existing != null && existing.id != directoryId) {
+            throw IllegalArgumentException("A directory with this name already exists in the parent.")
+        }
         directoryDao.rename(directoryId, newName)
     }
 
-    suspend fun moveDirectory(directoryId: String, newParentId: String?) {
+    suspend fun moveDirectory(bucketId: String, directoryId: String, newParentId: String?) {
+        val dir = directoryDao.getById(directoryId) ?: return
+        val existing = directoryDao.getByNameAndParent(bucketId, newParentId, dir.name)
+        if (existing != null && existing.id != directoryId) {
+            throw IllegalArgumentException("A directory with this name already exists in the target.")
+        }
         directoryDao.move(directoryId, newParentId)
     }
 
@@ -229,6 +253,10 @@ class LocalBucketRepository @Inject constructor(
         content: ByteArray,
         bucketPassword: String
     ): LocalFileEntity {
+        val existing = fileDao.getByNameAndDirectory(bucket.id, directoryId, name)
+        if (existing != null) {
+            throw IllegalArgumentException("A file with this name already exists in the directory.")
+        }
         val fileId = generateId16()
         val blobId = generateId16()
         val salt = CryptoUtils.generateSalt()

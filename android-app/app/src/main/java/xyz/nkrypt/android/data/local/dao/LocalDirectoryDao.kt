@@ -12,6 +12,9 @@ interface LocalDirectoryDao {
     @Query("SELECT * FROM local_directories WHERE bucketId = :bucketId AND (parentDirectoryId = :parentId OR (:parentId IS NULL AND parentDirectoryId IS NULL)) ORDER BY name")
     suspend fun getByBucketAndParent(bucketId: String, parentId: String?): List<LocalDirectoryEntity>
 
+    @Query("SELECT * FROM local_directories WHERE bucketId = :bucketId AND name = :name AND (parentDirectoryId = :parentId OR (:parentId IS NULL AND parentDirectoryId IS NULL)) LIMIT 1")
+    suspend fun getByNameAndParent(bucketId: String, parentId: String?, name: String): LocalDirectoryEntity?
+
     @Query("SELECT * FROM local_directories WHERE id = :id")
     suspend fun getById(id: String): LocalDirectoryEntity?
 
