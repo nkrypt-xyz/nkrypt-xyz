@@ -13,8 +13,48 @@ import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import xyz.nkrypt.android.data.local.entity.LocalBucketEntity
 import xyz.nkrypt.android.data.local.entity.LocalDirectoryEntity
 import xyz.nkrypt.android.data.local.entity.LocalFileEntity
+
+@Composable
+fun BucketMetadataDialog(
+    bucket: LocalBucketEntity,
+    onDismiss: () -> Unit
+) {
+    val scrollState = rememberScrollState()
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = {
+            Text("Bucket metadata", style = MaterialTheme.typography.titleLarge)
+        },
+        text = {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .heightIn(max = 400.dp)
+                    .verticalScroll(scrollState)
+            ) {
+                MetadataContent(
+                    items = listOf(
+                        "Name" to bucket.name,
+                        "ID" to bucket.id,
+                        "Root path" to bucket.rootPath,
+                        "Crypt spec" to bucket.cryptSpec,
+                        "Created" to formatTimestamp(bucket.createdAt),
+                        "Meta data" to formatJson(bucket.metaData),
+                        "Crypt data" to truncateIfLong(bucket.cryptData)
+                    )
+                )
+            }
+        },
+        confirmButton = {
+            TextButton(onClick = onDismiss) {
+                Text("Close")
+            }
+        }
+    )
+}
 
 @Composable
 fun MetadataDialog(

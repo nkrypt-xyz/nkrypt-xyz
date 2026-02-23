@@ -3,7 +3,6 @@ package xyz.nkrypt.android.ui.localbuckets
 import android.net.Uri
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
@@ -19,7 +18,10 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Download
 import androidx.compose.material.icons.filled.Folder
+import androidx.compose.material.icons.filled.Info
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.FloatingActionButton
@@ -34,9 +36,11 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import kotlinx.coroutines.launch
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import xyz.nkrypt.android.data.local.entity.LocalBucketEntity
@@ -50,13 +54,31 @@ fun LocalBucketsScreen(
     val buckets by viewModel.buckets.collectAsState(initial = emptyList())
     val createDialogState by viewModel.createDialogState.collectAsState(initial = null)
     val context = LocalContext.current
+    val scope = rememberCoroutineScope()
+    var contextMenuBucket by remember { mutableStateOf<LocalBucketEntity?>(null) }
+    var metadataBucket by remember { mutableStateOf<LocalBucketEntity?>(null) }
     var bucketToDelete by remember { mutableStateOf<LocalBucketEntity?>(null) }
+    var bucketToDownload by remember { mutableStateOf<LocalBucketEntity?>(null) }
 
     val directoryPickerLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.OpenDocumentTree()
     ) { uri: Uri? ->
         if (uri != null) {
             viewModel.onDirectorySelected(context, uri)
+        }
+    }
+
+    val downloadDirPickerLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.OpenDocumentTree()
+    ) { uri: Uri? ->
+        uri?.let { treeUri ->
+            val bucket = bucketToDownload
+            if (bucket != null) {
+                scope.launch {
+                    viewModel.downloadBucketToDirectory(bucket, treeUri, context)
+                    bucketToDownload = null
+                }
+            }
         }
     }
 
@@ -118,7 +140,7 @@ fun LocalBucketsScreen(
                                 .fillMaxWidth()
                                 .combinedClickable(
                                     onClick = { onBucketClick(bucket) },
-                                    onLongClick = { bucketToDelete = bucket }
+                                    onLongClick = { contextMenuBucket = bucket }
                                 ),
                             colors = CardDefaults.cardColors(
                                 containerColor = MaterialTheme.colorScheme.surfaceVariant
@@ -151,6 +173,59 @@ fun LocalBucketsScreen(
                     }
                 }
             }
+        }
+        if (contextMenuBucket != null) {
+            val bucket = contextMenuBucket!!
+            AlertDialog(
+                onDismissRequest = { contextMenuBucket = null },
+                content = {
+                    Column {
+                        Text("${bucket.name}", style = MaterialTheme.typography.titleMedium)
+                        Spacer(modifier = Modifier.height(16.dp))
+                        TextButton(
+                            onClick = {
+                                metadataBucket = bucket
+                                contextMenuBucket = null
+                            }
+                        ) {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Icon(Icons.Default.Info, contentDescription = null, modifier = Modifier.padding(end = 8.dp))
+                                Text("View metadata")
+                            }
+                        }
+                        TextButton(
+                            onClick = {
+                                bucketToDownload = bucket
+                                contextMenuBucket = null
+                                downloadDirPickerLauncher.launch(null)
+                            }
+                        ) {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Icon(Icons.Default.Download, contentDescription = null, modifier = Modifier.padding(end = 8.dp))
+                                Text("Download entire bucket")
+                            }
+                        }
+                        TextButton(
+                            onClick = {
+                                bucketToDelete = bucket
+                                contextMenuBucket = null
+                            }
+                        ) {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Icon(Icons.Default.Delete, contentDescription = null, modifier = Modifier.padding(end = 8.dp))
+                                Text("Delete", color = MaterialTheme.colorScheme.error)
+                            }
+                        }
+                        TextButton(onClick = { contextMenuBucket = null }) { Text("Cancel") }
+                    }
+                }
+            )
+        }
+        if (metadataBucket != null) {
+            BucketMetadataDialog(
+                bucket = metadataBucket!!,
+                onDismiss = { metadataBucket = null }
+            )
         }
         if (bucketToDelete != null) {
             val bucket = bucketToDelete!!
