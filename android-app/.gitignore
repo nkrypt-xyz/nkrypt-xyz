@@ -1,0 +1,25 @@
+build/
+*.iml
+.idea/
+.gradle/
+local.properties
+*.apk
+*.aab
+.DS_Store
+.android
+tempdocs/
+.kotlin/
+
+# Signing (never commit keystores or signing config)
+*.jks
+*.keystore
+keystore.properties
+
+# Android Studio
+captures/
+
+# Google Services (API keys)
+google-services.json
+
+# Profiling
+*.hprof
