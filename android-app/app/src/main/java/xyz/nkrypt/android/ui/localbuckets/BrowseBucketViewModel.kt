@@ -20,6 +20,7 @@ import xyz.nkrypt.android.data.local.MasterPasswordStore
 import xyz.nkrypt.android.data.local.entity.LocalBucketEntity
 import xyz.nkrypt.android.data.local.entity.LocalDirectoryEntity
 import xyz.nkrypt.android.data.local.entity.LocalFileEntity
+import xyz.nkrypt.android.util.uniqueFileName
 import javax.inject.Inject
 
 sealed class DownloadTarget {
@@ -251,7 +252,8 @@ class BrowseBucketViewModel @Inject constructor(
     ) {
         val content = repo.readFileContent(bucket, file.id, bucketPassword) ?: return
         val root = DocumentFile.fromTreeUri(context, destTreeUri) ?: return
-        val docFile = root.createFile("application/octet-stream", file.name) ?: return
+        val name = uniqueFileName(root, file.name)
+        val docFile = root.createFile("application/octet-stream", name) ?: return
         context.contentResolver.openOutputStream(docFile.uri)?.use { it.write(content) }
     }
 
@@ -274,7 +276,8 @@ class BrowseBucketViewModel @Inject constructor(
             } else {
                 findOrCreateDirectory(targetDir, relPath)
             }
-            val docFile = parentDir?.createFile("application/octet-stream", file.name) ?: continue
+            val name = parentDir?.let { uniqueFileName(it, file.name) } ?: file.name
+            val docFile = parentDir?.createFile("application/octet-stream", name) ?: continue
             context.contentResolver.openOutputStream(docFile.uri)?.use { it.write(content) }
         }
     }

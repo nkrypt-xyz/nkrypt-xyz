@@ -19,6 +19,7 @@ import xyz.nkrypt.android.data.local.MasterPasswordStore
 import xyz.nkrypt.android.data.local.entity.LocalBucketEntity
 import xyz.nkrypt.android.data.local.entity.LocalDirectoryEntity
 import xyz.nkrypt.android.data.local.entity.LocalFileEntity
+import xyz.nkrypt.android.util.uniqueFileName
 import javax.inject.Inject
 
 @HiltViewModel
@@ -118,7 +119,8 @@ class LocalBucketsViewModel @Inject constructor(
         context: Context
     ) {
         val content = repo.readFileContent(bucket, file.id, bucketPassword) ?: return
-        val docFile = parentDir.createFile("application/octet-stream", file.name) ?: return
+        val name = uniqueFileName(parentDir, file.name)
+        val docFile = parentDir.createFile("application/octet-stream", name) ?: return
         context.contentResolver.openOutputStream(docFile.uri)?.use { it.write(content) }
     }
 
@@ -140,7 +142,8 @@ class LocalBucketsViewModel @Inject constructor(
             } else {
                 findOrCreateDirectory(targetDir, relPath)
             }
-            val docFile = fileParentDir?.createFile("application/octet-stream", file.name) ?: continue
+            val name = fileParentDir?.let { uniqueFileName(it, file.name) } ?: file.name
+            val docFile = fileParentDir?.createFile("application/octet-stream", name) ?: continue
             context.contentResolver.openOutputStream(docFile.uri)?.use { it.write(content) }
         }
     }
