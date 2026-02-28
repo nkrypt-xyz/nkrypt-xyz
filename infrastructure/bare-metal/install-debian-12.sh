@@ -87,17 +87,17 @@ log_section() { log "\n${CYAN}━━━  $1  ━━━${NC}\n"; }
 
 die() { log_error "$1"; exit 1; }
 
+# Run a command, showing output live on the terminal AND writing it to the log.
+# tee always exits 0, so we must check PIPESTATUS[0] (the real command's exit code).
 run() {
     log_info "▶ $*"
-    if "$@" >> "$LOG_FILE" 2>&1; then
-        return 0
-    else
-        die "Command failed: $*  (see ${LOG_FILE})"
-    fi
+    "$@" 2>&1 | tee -a "$LOG_FILE"
+    local rc="${PIPESTATUS[0]}"
+    [[ "$rc" -eq 0 ]] || die "Command failed (exit $rc): $*  (see ${LOG_FILE})"
 }
 
-# Like run() but non-fatal
-try() { "$@" >> "$LOG_FILE" 2>&1 || true; }
+# Like run() but non-fatal — output still visible
+try() { "$@" 2>&1 | tee -a "$LOG_FILE" || true; }
 
 #-------------------------------------------------------------------------------
 # Argument parsing
@@ -464,10 +464,14 @@ deploy_backend() {
     run chown -R nkrypt:nkrypt "$INSTALL_DIR"
 
     # Build
-    log_info "Building web-server (Go)…"
     export PATH="$PATH:/usr/local/go/bin"
+
+    log_info "Downloading Go module dependencies (this may take a few minutes on first run)…"
+    run bash -c "cd '${REPO_ROOT}/web-server' && go mod download"
+
+    log_info "Compiling web-server binary…"
     run bash -c "cd '${REPO_ROOT}/web-server' && \
-        go build -ldflags='-s -w' -o '${INSTALL_DIR}/bin/nkrypt-server' ./cmd/server"
+        go build -v -ldflags='-s -w' -o '${INSTALL_DIR}/bin/nkrypt-server' ./cmd/server"
     run cp -r "${REPO_ROOT}/web-server/migrations/." "${INSTALL_DIR}/migrations/"
     run chown -R nkrypt:nkrypt "$INSTALL_DIR"
     run chmod 755 "${INSTALL_DIR}/bin/nkrypt-server"
