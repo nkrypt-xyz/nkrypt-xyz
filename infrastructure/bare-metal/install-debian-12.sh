@@ -78,7 +78,7 @@ UNINSTALL=false
 #-------------------------------------------------------------------------------
 # Logging
 #-------------------------------------------------------------------------------
-log()         { echo -e "$1" | tee -a "$LOG_FILE"; }
+log()         { echo -e "$1"; }
 log_info()    { log "${BLUE}[INFO]${NC}    $1"; }
 log_success() { log "${GREEN}[OK]${NC}      $1"; }
 log_warn()    { log "${YELLOW}[WARN]${NC}    $1"; }
@@ -87,17 +87,20 @@ log_section() { log "\n${CYAN}━━━  $1  ━━━${NC}\n"; }
 
 die() { log_error "$1"; exit 1; }
 
-# Run a command, showing output live on the terminal AND writing it to the log.
-# tee always exits 0, so we must check PIPESTATUS[0] (the real command's exit code).
+# Run a command and show its output live.
+# main() sets up "exec > >(tee -a $LOG_FILE) 2>&1" so all output already goes
+# to both terminal and log — no need for an explicit tee pipe here.
+# We use "|| rc=$?" with set -e active: the || operator suppresses errexit on
+# the left-hand side, so a failing command is caught cleanly in rc.
 run() {
     log_info "▶ $*"
-    "$@" 2>&1 | tee -a "$LOG_FILE"
-    local rc="${PIPESTATUS[0]}"
+    local rc=0
+    "$@" || rc=$?
     [[ "$rc" -eq 0 ]] || die "Command failed (exit $rc): $*  (see ${LOG_FILE})"
 }
 
-# Like run() but non-fatal — output still visible
-try() { "$@" 2>&1 | tee -a "$LOG_FILE" || true; }
+# Like run() but non-fatal
+try() { "$@" 2>/dev/null || true; }
 
 #-------------------------------------------------------------------------------
 # Argument parsing
@@ -271,7 +274,8 @@ install_postgresql() {
 
     run systemctl enable --now postgresql
 
-    # Idempotent: create role + database only if they don't exist
+    # Create role + database if they don't exist; always sync the password so
+    # re-runs with a different --db-password don't break authentication.
     if ! sudo -u postgres psql -tAc "SELECT 1 FROM pg_roles WHERE rolname='nkrypt'" | grep -q 1; then
         sudo -u postgres psql >> "$LOG_FILE" 2>&1 <<SQL
 CREATE DATABASE nkrypt;
@@ -281,6 +285,12 @@ ALTER DATABASE nkrypt OWNER TO nkrypt;
 \c nkrypt
 GRANT ALL ON SCHEMA public TO nkrypt;
 SQL
+        log_success "PostgreSQL role and database created"
+    else
+        # Role already exists — update password to match current run
+        sudo -u postgres psql -c "ALTER USER nkrypt WITH ENCRYPTED PASSWORD '${DB_PASSWORD}';" \
+            >> "$LOG_FILE" 2>&1
+        log_info "PostgreSQL role already exists — password updated"
     fi
 
     local hba="/etc/postgresql/${POSTGRES_VERSION}/main/pg_hba.conf"
@@ -355,11 +365,23 @@ WantedBy=multi-user.target
 UNIT
 
     run systemctl daemon-reload
-    run systemctl enable --now minio
+    run systemctl enable minio
+
+    # MinIO bakes root credentials into its data dir on first init.
+    # If it fails to start (credentials changed across re-runs), wipe the data
+    # dir and let it reinitialize — on a test/fresh install this is safe.
+    local minio_rc=0
+    systemctl restart minio || minio_rc=$?
+    if [[ "$minio_rc" -ne 0 ]]; then
+        log_warn "MinIO failed to restart (exit $minio_rc) — wiping data dir and reinitializing"
+        systemctl stop minio 2>/dev/null || true
+        rm -rf /mnt/minio/data/*
+        run systemctl start minio
+    fi
 
     local i=0
     while ! curl -sf http://localhost:9000/minio/health/live &>/dev/null; do
-        (( i++ )); [[ $i -lt 30 ]] || die "MinIO did not become healthy"
+        i=$(( i + 1 )); [[ $i -lt 30 ]] || die "MinIO did not become healthy"
         sleep 2
     done
     log_success "MinIO ready"
@@ -421,18 +443,12 @@ configure_caddy() {
         global_block="{\n    email ${ACME_EMAIL}\n}\n\n"
     fi
 
-    # caddy needs write access to logs
-    run mkdir -p /var/log/caddy
-    run chown caddy:caddy /var/log/caddy
-
+    # Logs go to journald by default (journalctl -u caddy).
+    # File-based access logs can be added later once the service is stable.
     cat > /etc/caddy/Caddyfile <<CADDYFILE
 $(printf '%b' "$global_block")# ── API (backend) ──────────────────────────────────────────────────────────
 ${API_DOMAIN} {
     reverse_proxy localhost:9041
-
-    log {
-        output file /var/log/caddy/api-access.log
-    }
 }
 
 # ── Web Client (SPA) ────────────────────────────────────────────────────────
@@ -440,16 +456,12 @@ ${CLIENT_DOMAIN} {
     root * ${INSTALL_DIR}/web-client
     file_server
     try_files {path} /index.html
-
-    log {
-        output file /var/log/caddy/client-access.log
-    }
 }
 CADDYFILE
 
     run caddy validate --config /etc/caddy/Caddyfile
-    run systemctl reload caddy
-    log_success "Caddyfile written and reloaded"
+    run systemctl restart caddy
+    log_success "Caddyfile written and Caddy started"
 }
 
 #-------------------------------------------------------------------------------
@@ -471,7 +483,7 @@ deploy_backend() {
 
     log_info "Compiling web-server binary…"
     run bash -c "cd '${REPO_ROOT}/web-server' && \
-        go build -v -ldflags='-s -w' -o '${INSTALL_DIR}/bin/nkrypt-server' ./cmd/server"
+        go build -v -buildvcs=false -ldflags='-s -w' -o '${INSTALL_DIR}/bin/nkrypt-server' ./cmd/server"
     run cp -r "${REPO_ROOT}/web-server/migrations/." "${INSTALL_DIR}/migrations/"
     run chown -R nkrypt:nkrypt "$INSTALL_DIR"
     run chmod 755 "${INSTALL_DIR}/bin/nkrypt-server"
@@ -541,7 +553,7 @@ UNIT
     # Health check
     local i=0
     while ! curl -sf http://localhost:9041/healthz &>/dev/null; do
-        (( i++ )); [[ $i -lt 15 ]] || die "nkrypt-server did not start. Check: journalctl -u nkrypt-server"
+        i=$(( i + 1 )); [[ $i -lt 15 ]] || die "nkrypt-server did not start. Check: journalctl -u nkrypt-server"
         sleep 2
     done
     log_success "Backend running on localhost:9041"
@@ -640,7 +652,7 @@ echo "Backup: $DIR/db_${DATE}.sql.gz"
 SCRIPT
 
     chmod +x /usr/local/bin/backup-nkrypt.sh
-    (crontab -l 2>/dev/null | grep -v backup-nkrypt; \
+    (crontab -l 2>/dev/null | grep -v backup-nkrypt || true; \
      echo "0 2 * * * /usr/local/bin/backup-nkrypt.sh") | crontab -
     log_success "Backups scheduled daily at 02:00 → /var/backups/nkrypt/"
 }
@@ -661,7 +673,6 @@ print_summary() {
     log "  systemctl status nkrypt-server postgresql redis-server minio caddy"
     log "  journalctl -u nkrypt-server -f"
     log "  journalctl -u caddy -f"
-    log "  tail -f /var/log/caddy/api-access.log"
     log ""
     log_info "Log file: ${LOG_FILE}"
     log ""
@@ -671,7 +682,10 @@ print_summary() {
 # Main
 #-------------------------------------------------------------------------------
 main() {
-    # Print banner before log redirect so it always goes to terminal
+    # Redirect ALL output to log + terminal from this point on.
+    # run() and try() rely on this — they do NOT pipe through tee themselves.
+    exec > >(tee -a "$LOG_FILE") 2>&1
+
     echo -e "${CYAN}"
     echo "  ╔══════════════════════════════════════════════════╗"
     echo "  ║      nkrypt.xyz  —  Debian 12 Installer          ║"
@@ -689,8 +703,6 @@ main() {
     check_debian
     validate_args
 
-    # Redirect all output to log file as well as terminal
-    exec > >(tee -a "$LOG_FILE") 2>&1
     log_info "Log: ${LOG_FILE}"
 
     # ── Dependencies ──────────────────────────────────────────────────
