@@ -1,0 +1,101 @@
+# nkrypt.xyz Desktop Stack
+# Generated/managed by desktop-bootstrapper. Run from repo root.
+# Uses nkrypt-desktop-* names so it can run alongside dev (nkrypt-*-dev).
+# Variables: set in .env or by the desktop app
+
+name: nkrypt-desktop
+
+version: "3.9"
+
+services:
+  postgres:
+    image: docker.io/library/postgres:16-alpine
+    container_name: nkrypt-desktop-postgres
+    environment:
+      POSTGRES_DB: nkrypt
+      POSTGRES_USER: nkrypt
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-nkrypt_password}
+    ports:
+      - "${POSTGRES_PORT:-9200}:5432"
+    volumes:
+      - ${DATA_DIR:-./data}/postgres:/var/lib/postgresql/data:z
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U nkrypt -d nkrypt"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+  redis:
+    image: docker.io/library/redis:7-alpine
+    container_name: nkrypt-desktop-redis
+    ports:
+      - "${REDIS_PORT:-9201}:6379"
+    volumes:
+      - ${DATA_DIR:-./data}/redis:/data:z
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+  minio:
+    image: docker.io/minio/minio:latest
+    container_name: nkrypt-desktop-minio
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ACCESS_KEY:-minioadmin}
+      MINIO_ROOT_PASSWORD: ${MINIO_SECRET_KEY:-minioadmin}
+    ports:
+      - "${MINIO_PORT:-9202}:9000"
+      - "${MINIO_CONSOLE_PORT:-9203}:9001"
+    volumes:
+      - ${DATA_DIR:-./data}/minio:/data:z
+    command: server /data --console-address ":9001"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+    restart: unless-stopped
+
+  web-server:
+    build:
+      context: ../web-server
+      dockerfile: deploy/docker/Dockerfile
+    image: nkrypt-desktop-web-server:latest
+    container_name: nkrypt-desktop-web-server
+    environment:
+      NK_DATABASE_URL: postgres://nkrypt:${POSTGRES_PASSWORD:-nkrypt_password}@postgres:5432/nkrypt?sslmode=disable
+      NK_REDIS_ADDR: redis:6379
+      NK_MINIO_ENDPOINT: minio:9000
+      NK_MINIO_ACCESS_KEY: ${MINIO_ACCESS_KEY:-minioadmin}
+      NK_MINIO_SECRET_KEY: ${MINIO_SECRET_KEY:-minioadmin}
+      NK_IAM_DEFAULT_ADMIN_PASSWORD: ${NK_IAM_DEFAULT_ADMIN_PASSWORD:-PleaseChangeMe@YourEarliest2Day}
+      NK_LOG_LEVEL: ${NK_LOG_LEVEL:-info}
+      NK_LOG_FORMAT: ${NK_LOG_FORMAT:-json}
+    ports:
+      - "${WEB_SERVER_PORT:-9204}:9041"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      minio:
+        condition: service_healthy
+    restart: unless-stopped
+
+  web-client:
+    build:
+      context: ..
+      dockerfile: web-client/Dockerfile
+      args:
+        VITE_DEFAULT_SERVER_URL: ${VITE_DEFAULT_SERVER_URL:-http://localhost:9204}
+        VITE_CLIENT_APPLICATION_NAME: ${VITE_CLIENT_APPLICATION_NAME:-nkrypt-web-client}
+    image: nkrypt-desktop-web-client:latest
+    container_name: nkrypt-desktop-web-client
+    ports:
+      - "${WEB_CLIENT_PORT:-9205}:80"
+    depends_on:
+      - web-server
+    restart: unless-stopped

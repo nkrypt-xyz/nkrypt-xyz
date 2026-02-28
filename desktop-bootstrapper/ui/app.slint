@@ -1,0 +1,366 @@
+import { VerticalBox, HorizontalBox, Button, ScrollView, LineEdit, SpinBox, CheckBox, GroupBox, TabWidget, TextEdit } from "std-widgets.slint";
+
+export struct ConfigRow {
+    key: string,
+    value: string,
+}
+
+export struct ServiceStatus {
+    name: string,
+    status: string,
+    is-healthy: bool,
+    port: string,   // e.g. "9200" or "9202, 9203" — empty if not applicable
+    url: string,    // non-empty = show Open button
+}
+
+export component MainWindow inherits Window {
+    title: "nkrypt.xyz Desktop Bootstrapper";
+    width: 700px;
+    height: 700px;
+    callback browse-data-dir();
+    callback start-services();
+    callback stop-services();
+    callback refresh-status();
+    callback open-url(string);
+    callback toggle-autostart(bool);
+    callback remove-all();
+    callback save-logs();
+    callback copy-logs();
+
+    in-out property <string> docker-status: "Checking...";
+    in-out property <bool> docker-ready: false;
+    in-out property <string> install-commands: "Run the following commands to install Docker:\n\n# Docker\ncurl -fsSL https://get.docker.com | sh\nsudo usermod -aG docker $USER\n\n# Docker Compose (plugin)\nsudo apt-get update\nsudo apt-get install -y docker-compose-plugin\n\nLog out and back in, then restart this app.";
+
+    in-out property <string> data-dir: "";
+    in-out property <int> postgres-port: 9200;
+    in-out property <int> redis-port: 9201;
+    in-out property <int> minio-port: 9202;
+    in-out property <int> minio-console-port: 9203;
+    in-out property <int> web-server-port: 9204;
+    in-out property <int> web-client-port: 9205;
+
+    in-out property <string> admin-password: "PleaseChangeMe@YourEarliest2Day";
+    in-out property <string> log-level: "info";
+
+    in-out property <[ServiceStatus]> service-statuses: [];
+    in-out property <string> log-output: "";
+    in-out property <bool> autostart-enabled: false;
+    in-out property <bool> operation-in-progress: false;
+
+    VerticalBox {
+        padding: 20px;
+        spacing: 12px;
+
+        if (root.docker-ready == false): GroupBox {
+            title: "Prerequisites";
+            VerticalBox {
+                Text {
+                    text: root.docker-status;
+                    wrap: word-wrap;
+                }
+                ScrollView {
+                    Text {
+                        text: root.install-commands;
+                        wrap: word-wrap;
+                    }
+                }
+            }
+        }
+
+        if (root.docker-ready): TabWidget {
+            Tab {
+                title: "Main";
+                VerticalBox {
+                    spacing: 12px;
+                    GroupBox {
+                        title: "Services";
+                        VerticalBox {
+                            spacing: 8px;
+                            HorizontalBox {
+                                spacing: 8px;
+                                Button {
+                                    text: "Start";
+                                    enabled: !root.operation-in-progress;
+                                    clicked => { root.start-services(); }
+                                }
+                                Button {
+                                    text: "Stop";
+                                    enabled: !root.operation-in-progress;
+                                    clicked => { root.stop-services(); }
+                                }
+                                Button {
+                                    text: "Refresh";
+                                    enabled: !root.operation-in-progress;
+                                    clicked => { root.refresh-status(); }
+                                }
+                            }
+                            GroupBox {
+                                title: "Service Status";
+                                preferred-height: 210px;
+                                VerticalBox {
+                                    spacing: 0px;
+                                    // Header row
+                                    HorizontalBox {
+                                        alignment: start;
+                                        spacing: 0px;
+                                        padding: 4px;
+                                        Text { text: "Service"; min-width: 120px; color: #888888; font-size: 11px; vertical-alignment: center; }
+                                        Text { text: "Status"; min-width: 90px; color: #888888; font-size: 11px; vertical-alignment: center; }
+                                        Text { text: "Port(s)"; min-width: 100px; color: #888888; font-size: 11px; vertical-alignment: center; }
+                                        Text { text: ""; min-width: 70px; }
+                                    }
+                                    ScrollView {
+                                        vertical-stretch: 1;
+                                        VerticalBox {
+                                            spacing: 4px;
+                                            padding: 4px;
+                                            for service in root.service-statuses: HorizontalBox {
+                                                alignment: start;
+                                                spacing: 0px;
+                                                // Name
+                                                Text {
+                                                    text: service.name;
+                                                    min-width: 120px;
+                                                    vertical-alignment: center;
+                                                    font-size: 13px;
+                                                }
+                                                // Status indicator
+                                                HorizontalBox {
+                                                    spacing: 5px;
+                                                    min-width: 90px;
+                                                    alignment: start;
+                                                    Rectangle {
+                                                        width: 8px;
+                                                        height: 8px;
+                                                        y: (parent.height - self.height) / 2;
+                                                        background: service.is-healthy ? #4caf50 : #f44336;
+                                                        border-radius: 4px;
+                                                    }
+                                                    Text {
+                                                        text: service.is-healthy ? "Running" : (service.status == "not found" ? "Stopped" : service.status);
+                                                        color: service.is-healthy ? #4caf50 : #f44336;
+                                                        font-size: 12px;
+                                                        vertical-alignment: center;
+                                                    }
+                                                }
+                                                // Port(s)
+                                                Text {
+                                                    text: service.port;
+                                                    min-width: 100px;
+                                                    font-size: 12px;
+                                                    color: #aaaaaa;
+                                                    vertical-alignment: center;
+                                                }
+                                                // Open button (only when url non-empty and healthy)
+                                                if (service.url != "" && service.is-healthy): Button {
+                                                    text: "Open";
+                                                    min-width: 60px;
+                                                    clicked => { root.open-url(service.url); }
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+            Tab {
+                title: "Config";
+                ScrollView {
+                    VerticalBox {
+                        spacing: 12px;
+                        GroupBox {
+                            title: "Data Directory";
+                            HorizontalBox {
+                                LineEdit {
+                                    text <=> root.data-dir;
+                                    placeholder-text: "e.g. /home/user/nkrypt-data";
+                                }
+                                Button {
+                                    text: "Browse";
+                                    clicked => { root.browse-data-dir(); }
+                                }
+                            }
+                        }
+                        GroupBox {
+                            title: "Ports";
+                            VerticalBox {
+                                HorizontalBox {
+                                    Text { text: "PostgreSQL:"; min-width: 140px; vertical-alignment: center; }
+                                    SpinBox { value <=> root.postgres-port; minimum: 1024; maximum: 65535; }
+                                }
+                                HorizontalBox {
+                                    Text { text: "Redis:"; min-width: 140px; vertical-alignment: center; }
+                                    SpinBox { value <=> root.redis-port; minimum: 1024; maximum: 65535; }
+                                }
+                                HorizontalBox {
+                                    Text { text: "MinIO:"; min-width: 140px; vertical-alignment: center; }
+                                    SpinBox { value <=> root.minio-port; minimum: 1024; maximum: 65535; }
+                                }
+                                HorizontalBox {
+                                    Text { text: "MinIO Console:"; min-width: 140px; vertical-alignment: center; }
+                                    SpinBox { value <=> root.minio-console-port; minimum: 1024; maximum: 65535; }
+                                }
+                                HorizontalBox {
+                                    Text { text: "Web Server:"; min-width: 140px; vertical-alignment: center; }
+                                    SpinBox { value <=> root.web-server-port; minimum: 1024; maximum: 65535; }
+                                }
+                                HorizontalBox {
+                                    Text { text: "Web Client:"; min-width: 140px; vertical-alignment: center; }
+                                    SpinBox { value <=> root.web-client-port; minimum: 1024; maximum: 65535; }
+                                }
+                            }
+                        }
+                        GroupBox {
+                            title: "Environment";
+                            VerticalBox {
+                                HorizontalBox {
+                                    Text { text: "Admin password:"; min-width: 140px; vertical-alignment: center; }
+                                    LineEdit {
+                                        text <=> root.admin-password;
+                                        input-type: InputType.password;
+                                    }
+                                }
+                                HorizontalBox {
+                                    Text { text: "Log level:"; min-width: 140px; vertical-alignment: center; }
+                                    LineEdit { text <=> root.log-level; placeholder-text: "info"; }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+            Tab {
+                title: "Logs";
+                VerticalBox {
+                    HorizontalBox {
+                        spacing: 8px;
+                        Button {
+                            text: "Copy to clipboard";
+                            clicked => { root.copy-logs(); }
+                        }
+                        Button {
+                            text: "Save to file...";
+                            clicked => { root.save-logs(); }
+                        }
+                    }
+                    ScrollView {
+                        vertical-stretch: 1;
+                        min-height: 200px;
+                        vertical-scrollbar-policy: ScrollBarPolicy.always-on;
+                        VerticalBox {
+                            Text {
+                                text: root.log-output;
+                                wrap: word-wrap;
+                            }
+                        }
+                    }
+                }
+            }
+            Tab {
+                title: "Settings";
+                ScrollView {
+                    VerticalBox {
+                        spacing: 16px;
+                        padding: 8px;
+
+                        // ── Startup ──────────────────────────────────────
+                        GroupBox {
+                            title: "Startup";
+                            VerticalBox {
+                                spacing: 4px;
+                                CheckBox {
+                                    text: "Auto-start services on login (systemd user service)";
+                                    checked <=> root.autostart-enabled;
+                                    toggled => { root.toggle-autostart(self.checked); }
+                                }
+                                Text {
+                                    text: "When enabled, a ~/.config/systemd/user/nkrypt-desktop.service unit is created and activated automatically.";
+                                    wrap: word-wrap;
+                                    color: #888888;
+                                    font-size: 11px;
+                                }
+                            }
+                        }
+
+                        // ── Danger Zone ───────────────────────────────────
+                        GroupBox {
+                            title: "Danger Zone";
+                            VerticalBox {
+                                spacing: 8px;
+                                Text {
+                                    text: "Removes all container volumes, networks, containers, and images for this stack. Your data directory on disk is NOT deleted.";
+                                    wrap: word-wrap;
+                                    color: #cccccc;
+                                }
+                                Button {
+                                    text: "Remove All Containers & Volumes";
+                                    clicked => { root.remove-all(); }
+                                }
+                            }
+                        }
+
+                        // ── About ─────────────────────────────────────────
+                        GroupBox {
+                            title: "About";
+                            VerticalBox {
+                                spacing: 12px;
+                                padding: 4px;
+
+                                // Logo / title block
+                                VerticalBox {
+                                    spacing: 4px;
+                                    Text {
+                                        text: "nkrypt.xyz";
+                                        font-size: 20px;
+                                        font-weight: 700;
+                                        color: #ffffff;
+                                    }
+                                    Text {
+                                        text: "Desktop Bootstrapper";
+                                        font-size: 13px;
+                                        color: #aaaaaa;
+                                    }
+                                    Text {
+                                        text: "End-to-end encrypted, self-hosted object storage.";
+                                        font-size: 12px;
+                                        color: #888888;
+                                        wrap: word-wrap;
+                                    }
+                                }
+
+                                // Divider
+                                Rectangle { height: 1px; background: #333333; }
+
+                                // Links
+                                VerticalBox {
+                                    spacing: 6px;
+                                    Text {
+                                        text: "LINKS";
+                                        font-size: 10px;
+                                        color: #666666;
+                                        letter-spacing: 1.2px;
+                                    }
+                                    HorizontalBox {
+                                        spacing: 8px;
+                                        alignment: start;
+                                        Button {
+                                            text: "GitHub Repository";
+                                            clicked => { root.open-url("https://github.com/nkrypt-xyz/nkrypt-xyz-web-server"); }
+                                        }
+                                        Button {
+                                            text: "Report an Issue";
+                                            clicked => { root.open-url("https://github.com/nkrypt-xyz/nkrypt-xyz-web-server/issues"); }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
